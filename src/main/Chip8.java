@@ -18,5 +18,14 @@ public class Chip8 {
         this.opcode = 0;
         this.iReg = 0;
         this.sPoint = 0;
+        this.memory = new char[4096];
+        this.cReg = new char[16];
+        this.gfx = new char[2048];
+        this.stack = new short[16];
+        this.key = new char[16];
+    }
+
+    public void loadGame(){
+
     }
 }
