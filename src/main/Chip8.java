@@ -27,5 +27,6 @@ public class Chip8 {
 
     public void loadGame(){
 
+
     }
 }
