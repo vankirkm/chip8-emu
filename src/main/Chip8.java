@@ -47,6 +47,11 @@ public class Chip8 {
         this.gfx = new char[2048];
         this.stack = new short[16];
         this.key = new char[16];
+
+        //load fontset into memory
+        for(int i = 0; i < fontSet.length; i++){
+            this.memory[0x50 + i] = fontSet[i];
+        }
     }
 
     public void loadGame(String filename){
@@ -74,12 +79,22 @@ public class Chip8 {
         //get opcode
         this.opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
         System.out.println(Integer.toHexString(this.opcode & 0xF000));
+
         //decode opcode
         switch(this.opcode & 0xF000){
 
             //multiple cases where the first 4 bits of the opcode are 0, so break into another switch to look at
             //the last two bytes of the opcode
             case 0x0000:
+                switch(this.opcode & 0x00FF){
+                    // 00E0 - clear the display
+                    case 0x00E0:
+                        break;
+
+                    // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
+                    case 0x00EE:
+                        break;
+                }
                 break;
 
             // 1nnn - set pCount to nnn
@@ -88,6 +103,10 @@ public class Chip8 {
 
             // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
             case 0x2000:
+                break;
+
+            // 3xkk - compare the register Vx to kk and if the are equal, increment pCount by 2
+            case 0x3000:
                 break;
 
             // 4xkk - compare the register Vx to kk and if the are not equal, increment pCount by 2
@@ -110,6 +129,48 @@ public class Chip8 {
             //multiple cases where the first 4 bits of the opcode are 8, so break into another switch to look at
             //the last 4 bits of the opcode
             case 0x8000:
+                switch(this.opcode & 0x000F){
+                    // 8xy0 - store the value of register Vy in register Vx
+                    case 0x0000:
+                        break;
+
+                    // 8xy1 - perform OR operation on values of Vx and Vy, then store the results in Vx
+                    case 0x0001:
+                        break;
+
+                    // 8xy2 - perform AND operation on values of Vx and Vy, then store the results in Vx
+                    case 0x0002:
+                        break;
+
+                    // 8xy3 - perform XOR operation on values of Vx and Vy, then store the results in Vx
+                    case 0x0003:
+                        break;
+
+                    // 8xy4 - The values of Vx and Vy are added together. If the result is greater than 8 bits,
+                    //set VF to 1, otherwise 0. only the lowest 8 bits of the result are kept and stored in Vx
+                    case 0x0004:
+                        break;
+
+                    // 8xy5 - if Vx > Vy, set VF to 1, otherwise 0. then Vy is subtracted from Vx,
+                    //and the results are stored in Vx
+                    case 0x0005:
+                        break;
+
+                    // 8xy6 - if the least significant bit of Vx is 1, then VF is set to 1, otherwise 0.
+                    //Then Vx is divided by 2.
+                    case 0x0006:
+                        break;
+
+                    // 8xy7 - if Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
+                    //and the results stored in Vx
+                    case 0x0007:
+                        break;
+
+                    // 8xyE - if the most significant bit of Vx is 1, then VF is set to 1, otherwise 0.
+                    //Then Vx is multiplied by 2.
+                    case 0x000E:
+                        break;
+                }
                 break;
 
             // 9xy0 - compare values of Vx and Vy and if they are not equal, increment pCount by 2
@@ -124,15 +185,66 @@ public class Chip8 {
             case 0xB000:
                 break;
 
-            // Cnnn - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
+            // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
             // store the results in Vx
             case 0xC000:
                 break;
 
-            // Dnnn - set iReg to nnn
+            // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
                 break;
 
+            //multiple cases where the first 4 bits of the opcode are E, so break into another switch to look at
+            //the last 2 bytes of the opcode
+            case 0xE000:
+                switch(this.opcode & 0x00FF){
+                    // Ex9E - checks the keyboard, and if the key corresponding to the value of Vx is currently
+                    //in the down position, pCount is incremented by 2
+                    case 0x009E:
+                        break;
+
+                    // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
+                    //in the up position, pCount is incremented by 2
+                    case 0x00A1:
+                        break;
+                }
+                break;
+
+            //multiple cases where the first 4 bits of the opcode are F, so break into another switch to look at
+            //the last 2 bytes of the opcode
+            case 0xF000:
+                switch(this.opcode & 0x00FF){
+                    // Fx07 - The value of delayTimer is placed into Vx
+                    case 0x0007:
+                        break;
+
+                    // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
+                    case 0x000A:
+                        break;
+
+                    // Fx15 - delayTimer is set equal to the value of Vx
+                    case 0x0015:
+                        break;
+
+                    // Fx18 - soundTimer is set equal to the value of Vx
+                    case 0x0018:
+                        break;
+
+                    // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
+                    case 0x001E:
+                        break;
+
+                    // Fx29 - the value of iReg is set to location of the hexadecimal sprite corresponding to the
+                    // value of Vx
+                    case 0x0029:
+                        break;
+
+                    // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
+                    // the tens digit at location I+1, and the ones digit at location I+2.
+                    case 0x0033:
+                        break;
+                }
+                break;
         }
 
     }
