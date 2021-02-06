@@ -54,10 +54,12 @@ public class Chip8 {
         try{
             FileInputStream fis = new FileInputStream("roms/" + filename);
             int ch = 0;
+            char memIndex = 0x200;
             try{
                 while((ch = fis.read()) != -1){
-                    System.out.println(Integer.toHexString(ch));
-                    instCount++;
+                    System.out.println(Integer.toBinaryString(ch));
+                    this.memory[memIndex] = (char) ch;
+                    memIndex++;
                 }
             }catch (IOException e){
                 System.out.println("End of file unexpectedly reached.");
@@ -66,7 +68,12 @@ public class Chip8 {
         }catch(FileNotFoundException e){
             System.out.println("File does not exist. Check file name and try again.");
         }
-        System.out.println(instCount);
+    }
 
+    public void emulateCycle(){
+        System.out.println(Integer.toBinaryString(memory[pCount]));
+        System.out.println(Integer.toBinaryString(memory[pCount+1]));
+        this.opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
+        System.out.println(Integer.toBinaryString(this.opcode));
     }
 }
