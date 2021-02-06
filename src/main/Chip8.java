@@ -17,6 +17,25 @@ public class Chip8 {
     private short[] stack;
     private short sPoint;
     private char[] key;
+    char[] fontSet =
+    {
+        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+                0x20, 0x60, 0x20, 0x20, 0x70, // 1
+                0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+                0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+                0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+                0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+                0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+                0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+                0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+                0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+                0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+                0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+                0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+                0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+                0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+                0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    };
 
     public Chip8(){
         this.pCount = 0x200;
@@ -31,12 +50,14 @@ public class Chip8 {
     }
 
     public void loadGame(String filename){
+        int instCount = 0;
         try{
             FileInputStream fis = new FileInputStream("roms/" + filename);
             int ch = 0;
             try{
                 while((ch = fis.read()) != -1){
-                    System.out.println(ch);
+                    System.out.println(Integer.toHexString(ch));
+                    instCount++;
                 }
             }catch (IOException e){
                 System.out.println("End of file unexpectedly reached.");
@@ -45,7 +66,7 @@ public class Chip8 {
         }catch(FileNotFoundException e){
             System.out.println("File does not exist. Check file name and try again.");
         }
-
+        System.out.println(instCount);
 
     }
 }
