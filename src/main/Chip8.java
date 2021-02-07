@@ -59,12 +59,12 @@ public class Chip8 {
         try{
             FileInputStream fis = new FileInputStream("roms/" + filename);
             int ch = 0;
-            char memIndex = 0x200;
             try{
                 while((ch = fis.read()) != -1){
-                    System.out.println(Integer.toBinaryString(ch));
-                    this.memory[memIndex] = (char) ch;
-                    memIndex++;
+                    System.out.println(instCount + " - " + Integer.toHexString(ch));
+                    this.memory[instCount + 0x200] = (char) ch;
+                    System.out.println(Integer.toHexString(instCount + 0x200));
+                    instCount++;
                 }
             }catch (IOException e){
                 System.out.println("End of file unexpectedly reached.");
@@ -103,6 +103,7 @@ public class Chip8 {
                 System.out.println("Command 1nnn - " + Integer.toHexString(this.opcode));
                 System.out.println("nnn: " + Integer.toHexString((this.opcode & 0x0FFF)));
                 this.pCount = (short)(this.opcode & 0x0FFF);
+                System.out.println(this.pCount);
                 break;
 
             // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
@@ -110,19 +111,25 @@ public class Chip8 {
                 System.out.println("Command 2nnn - " + Integer.toHexString(this.opcode));
                 break;
 
-            // 3xkk - compare the register Vx to kk and if the are equal, increment pCount by 2
+            // 3xkk - compare the register Vx to kk and if they are equal, increment pCount by 2
             case 0x3000:
-                char x = (char)(this.opcode & 0x0F00);
-                char kk = (char)(this.opcode & 0x00FF);
-                if(this.V[x] == kk){
+                System.out.println("Command 3xkk - " + Integer.toHexString(this.opcode));
+                System.out.println("Vx: " + this.V[(this.opcode & 0x0F00) >> 8]);
+                System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
+                if(this.V[(this.opcode & 0x0F00) >> 8] == (this.opcode & 0x00FF)){
                     this.pCount += 2;
                 }
                 break;
 
-            // 4xkk - compare the register Vx to kk and if the are not equal, increment pCount by 2
+            // 4xkk - compare the register Vx to kk and if they are not equal, increment pCount by 2
             case 0x4000:
                 System.out.println("Command 4xkk - " + Integer.toHexString(this.opcode));
-
+                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
+                System.out.println(Integer.toHexString((this.opcode & 0x0F00) >> 8));
+                System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
+                if((this.V[(this.opcode & 0x0F00) >> 8]) != (this.opcode & 0x00FF)){
+                    this.pCount += 2;
+                }
                 break;
 
             // 5xy0 - compare register Vx to Vy and if they are equal, increment pCount by 2
@@ -207,7 +214,10 @@ public class Chip8 {
 
             // Annn - set iReg to nnn
             case 0xA000:
-                System.out.println("Command Annn - " + Integer.toHexString(this.opcode));
+                System.out.println("Command Annn - " + Integer.toHexString(this.opcode & 0xFFFF));
+                System.out.println("nnn: " + Integer.toHexString(this.opcode & 0x0FFF));
+                this.iReg = (short)(this.opcode & 0x0FFF);
+                this.pCount += 2;
                 break;
 
             // Bnnn - set pCount to nnn plus the value of V0
@@ -223,7 +233,8 @@ public class Chip8 {
 
             // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
-                System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode));
+                System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
+                this.pCount += 2;
                 break;
 
             //multiple cases where the first 4 bits of the opcode are E, so break into another switch to look at
@@ -260,7 +271,10 @@ public class Chip8 {
 
                     // Fx15 - delayTimer is set equal to the value of Vx
                     case 0x0015:
-                        System.out.println("Command Fx15 - " + Integer.toHexString(this.opcode));
+                        System.out.println("Command Fx15 - " + Integer.toHexString(this.opcode & 0xFFFF));
+                        this.delayTimer = this.V[(this.opcode & 0x0F00) >> 8];
+                        System.out.println("delayTimer: " + Integer.toHexString(this.delayTimer));
+                        this.pCount += 2;
                         break;
 
                     // Fx18 - soundTimer is set equal to the value of Vx
@@ -296,6 +310,11 @@ public class Chip8 {
                         break;
                 }
                 break;
+        }
+
+        //update delay timer
+        if(this.delayTimer > 0){
+            this.delayTimer -= 1;
         }
 
     }
