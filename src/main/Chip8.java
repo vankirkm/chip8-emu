@@ -243,6 +243,14 @@ public class Chip8 {
                     // the tens digit at location I+1, and the ones digit at location I+2.
                     case 0x0033:
                         break;
+
+                    // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
+                    case 0x0055:
+                        break;
+
+                    // Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
+                    case 0x0065:
+                        break;
                 }
                 break;
         }
