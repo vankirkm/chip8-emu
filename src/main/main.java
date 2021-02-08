@@ -9,7 +9,7 @@ public class main {
         /*while(true){
             newChip.emulateCycle();
         }*/
-        for(;;){
+        for(int i = 0;i < 100; i++){
             newChip.emulateCycle();
         }
 
