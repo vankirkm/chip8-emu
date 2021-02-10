@@ -38,7 +38,7 @@ public class Chip8 {
     };
 
     public Chip8(){
-        Display emuDisplay = new Display();
+        DisplayManager emuDisplay = new DisplayManager();
         this.pCount = 0x200;
         this.opcode = 0;
         this.iReg = 0;
