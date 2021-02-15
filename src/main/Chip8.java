@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 
 public class Chip8 {
     private short opcode;
@@ -259,6 +260,12 @@ public class Chip8 {
                     //Then Vx is multiplied by 2.
                     case 0x000E:
                         System.out.println("Command 8xyE - " + Integer.toHexString(this.opcode));
+                        char tmp = (char)(this.V[(opcode & 0x0F00) >> 8] >> 7);
+                        System.out.println(Integer.toHexString(tmp));
+                        this.V[0xF] = tmp;
+                        System.out.println(Integer.toHexString(this.V[(opcode & 0x0F00) >> 8] * 2));
+                        this.V[(opcode & 0x0F00) >> 8] = (char)((this.V[(opcode & 0x0F00) >> 8] * 2) & 0x00FF);
+                        this.pCount += 2;
                         break;
                 }
                 break;
@@ -285,7 +292,7 @@ public class Chip8 {
             // Bnnn - set pCount to nnn plus the value of V0
             case 0xB000:
                 System.out.println("Command Bnnn - " + Integer.toHexString(this.opcode & 0xFFFF));
-                this.pCount = (short)((this.opcode & 0x0FFF) + this.V[0]);
+                this.pCount = (short)(((this.opcode & 0x0FFF) + this.V[0]) & 0x0FFF);
                 System.out.println(Integer.toHexString(this.V[0]));
                 System.out.println(Integer.toHexString(this.pCount & 0xFFFF));
                 break;
@@ -294,6 +301,10 @@ public class Chip8 {
             // store the results in Vx
             case 0xC000:
                 System.out.println("Command Cxyk - " + Integer.toHexString(this.opcode));
+                Random r = new Random();
+                int rand = r.nextInt(256);
+                this.V[(this.opcode & 0x0F00) >> 8] = (char)((this.opcode & 0x00FF) & rand);
+                this.pCount += 2;
                 break;
 
             // Dxyn - COMPLICATED INSTRUCTIONS
@@ -304,7 +315,6 @@ public class Chip8 {
                 y = this.V[(opcode & 0x00F0) >> 4];
                 int n = opcode & 0x000F;
                 for(int i = 0; i < n; i++){
-                    int pixel = emuDisplay.getScreenPixel(x,y);
                     for(int z = 0; z < 8; z++){
                         if (x < 64 && y < 32) {
                             int xcoord = x + z;
@@ -347,6 +357,8 @@ public class Chip8 {
                     // Fx07 - The value of delayTimer is placed into Vx
                     case 0x0007:
                         System.out.println("Command Fx07 - " + Integer.toHexString(this.opcode));
+                        this.V[(this.opcode & 0x0F00) >> 8] = delayTimer;
+                        this.pCount += 2;
                         break;
 
                     // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
@@ -365,36 +377,59 @@ public class Chip8 {
                     // Fx18 - soundTimer is set equal to the value of Vx
                     case 0x0018:
                         System.out.println("Command Fx18 - " + Integer.toHexString(this.opcode));
+                        soundTimer = this.V[(this.opcode & 0x0F00) >> 8];
+                        this.pCount += 2;
                         break;
 
                     // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
                     case 0x001E:
                         System.out.println("Command Fx1E - " + Integer.toHexString(this.opcode));
+                        iReg = (short)(iReg + this.V[(this.opcode & 0x0F00) >> 8]);
+                        this.pCount += 2;
                         break;
 
                     // Fx29 - the value of iReg is set to location of the hexadecimal sprite corresponding to the
                     // value of Vx
                     case 0x0029:
                         System.out.println("Command Fx29 - " + Integer.toHexString(this.opcode));
-                        this.pCount+= 2;
+                        iReg = (short)(this.V[(this.opcode & 0x0F00) >> 8]);
+                        this.pCount += 2;
                         break;
 
                     // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
                     // the tens digit at location I+1, and the ones digit at location I+2.
                     case 0x0033:
                         System.out.println("Command Fx33 - " + Integer.toHexString(this.opcode));
-                        this.pCount+= 2;
+                        int vx = this.V[(this.opcode & 0x0F00) >> 8];
+                        int hundreds = vx / 100;
+                        vx = vx - (hundreds * 100);
+                        int tens = vx / 10;
+                        vx = vx - (tens * 10);
+                        int units = vx;
+                        this.memory[iReg] = (char)hundreds;
+                        this.memory[iReg + 1] = (char)tens;
+                        this.memory[iReg + 2] = (char)units;
+                        this.pCount += 2;
                         break;
 
                     // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
                     case 0x0055:
                         System.out.println("Command Fx55 - " + Integer.toHexString(this.opcode));
+                        int tmp = (this.opcode & 0x0F00) >> 8;
+                        for(int i = 0; i <= tmp; i++){
+                            this.memory[iReg + i] = this.V[i];
+                        }
+                        this.pCount += 2;
                         break;
 
                     // Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
                     case 0x0065:
                         System.out.println("Command Fx65 - " + Integer.toHexString(this.opcode));
-                        this.pCount+= 2;
+                        int tmpX = (this.opcode & 0x0F00) >> 8;
+                        for(int i = 0; i <= tmpX; i++){
+                            this.V[i] = this.memory[iReg + i];
+                        }
+                        this.pCount +=2;
                         break;
                 }
                 break;
