@@ -52,7 +52,7 @@ public class Chip8 {
 
         //load fontset into memory
         for(int i = 0; i < fontSet.length; i++){
-            this.memory[0x50 + i] = fontSet[i];
+            this.memory[i] = fontSet[i];
         }
     }
 
@@ -112,7 +112,7 @@ public class Chip8 {
             // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
             case 0x2000:
                 System.out.println("Command 2nnn - " + Integer.toHexString(this.opcode));
-                this.sPoint += 1;
+                this.sPoint = (short)(this.sPoint + 1);
                 this.stack[sPoint] = this.pCount;
                 this.pCount = (short)(this.opcode & 0x0FFF);
                 break;
@@ -236,12 +236,23 @@ public class Chip8 {
                     //Then Vx is divided by 2.
                     case 0x0006:
                         System.out.println("Command 8xy6 - " + Integer.toHexString(this.opcode));
+                        this.V[0xF] = (char)(this.V[(opcode & 0x0F00) >> 8] & 0x0001);
+                        this.V[(opcode & 0x0F00) >> 8] = (char)(this.V[(opcode & 0x0F00) >> 8] >> 1);
+                        this.pCount += 2;
                         break;
 
                     // 8xy7 - if Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
                     //and the results stored in Vx
                     case 0x0007:
                         System.out.println("Command 8xy7 - " + Integer.toHexString(this.opcode));
+                        if(this.V[(opcode & 0x00F0) >> 4] > this.V[(opcode & 0x0F00) >> 8]){
+                            this.V[0xF] = 1;
+                        }
+                        else{
+                            this.V[0xF] = 0;
+                        }
+                        this.V[(opcode & 0x0F00) >> 8] = (char)((this.V[(opcode & 0x00F0) >> 4] - this.V[(opcode & 0x0F00) >> 8]) & 0x00FF);
+                        this.pCount += 2;
                         break;
 
                     // 8xyE - if the most significant bit of Vx is 1, then VF is set to 1, otherwise 0.
@@ -288,6 +299,25 @@ public class Chip8 {
             // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
                 System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
+                System.out.println((opcode & 0xF0FF) >> 8);
+                x = this.V[(opcode & 0x0F00) >> 8];
+                y = this.V[(opcode & 0x00F0) >> 4];
+                int n = opcode & 0x000F;
+                for(int i = 0; i < n; i++){
+                    int pixel = emuDisplay.getScreenPixel(x,y);
+                    for(int z = 0; z < 8; z++){
+                        if (x < 64 && y < 32) {
+                            int xcoord = x + z;
+                            int ycoord = y + i;
+                            // if pixel already exists, set carry (collision)
+                            if (emuDisplay.getScreenPixel(xcoord, ycoord) == 1) {
+                                this.V[0xF] = 0x01;
+                            }
+                            // draw via xor
+                            emuDisplay.setScreenPixel(xcoord,ycoord);
+                        }
+                    }
+                }
                 drawFlag = true;
                 this.pCount += 2;
                 break;
@@ -346,12 +376,14 @@ public class Chip8 {
                     // value of Vx
                     case 0x0029:
                         System.out.println("Command Fx29 - " + Integer.toHexString(this.opcode));
+                        this.pCount+= 2;
                         break;
 
                     // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
                     // the tens digit at location I+1, and the ones digit at location I+2.
                     case 0x0033:
                         System.out.println("Command Fx33 - " + Integer.toHexString(this.opcode));
+                        this.pCount+= 2;
                         break;
 
                     // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
@@ -362,6 +394,7 @@ public class Chip8 {
                     // Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
                     case 0x0065:
                         System.out.println("Command Fx65 - " + Integer.toHexString(this.opcode));
+                        this.pCount+= 2;
                         break;
                 }
                 break;

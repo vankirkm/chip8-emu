@@ -10,8 +10,9 @@ public class Screen extends JPanel {
     private int height = 32 * scale;
     private int graphics[][] = new int[32][64];
 
-    public void paintPixel(boolean white, int x, int y){
-        if(white){
+    public void paintPixel(int pixel, int x, int y){
+        if(pixel > 0){
+            System.out.println("white");
             gfx.setColor(Color.WHITE);
         }
         else{
@@ -21,11 +22,12 @@ public class Screen extends JPanel {
     }
 
     public int getPixel(int x, int y){
-        return graphics[x][y];
+        return graphics[y][x];
     }
 
     public void setPixel(int x, int y){
-        this.graphics[x][y] ^= 1;
+        int i = graphics[y][x] ^ 1;
+        graphics[y][x] = i;
     }
 
     public void paintScreen(){
@@ -33,24 +35,18 @@ public class Screen extends JPanel {
     }
 
     public void paintFullScreen(){
-        boolean value;
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 64; x++) {
-                if(graphics[y][x] == 0){
-                    value = false;
-                }
-                else{
-                    value = true;
-                }
-                paintPixel(value, x, y);
+                paintPixel(graphics[y][x], x, y);
             }
         }
     }
 
+    @Override
     public void paintComponent(Graphics gfx){
         super.paintComponent(gfx);
         this.gfx = gfx;
-        gfx.setColor(Color.WHITE);
+        gfx.setColor(Color.BLACK);
         gfx.fillRect(0, 0, width, height);
         paintFullScreen();
     }

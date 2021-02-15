@@ -28,7 +28,6 @@ public class DisplayManager extends JFrame{
         debug.setLayout(new BoxLayout(debug, BoxLayout.Y_AXIS));
         debug.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
 
-
         media.setPreferredSize(new Dimension(640,480));
 
         JPanel graphics = new JPanel();
@@ -55,6 +54,14 @@ public class DisplayManager extends JFrame{
 
     public void updateScreen(){
         this.media.paintScreen();
+    }
+
+    public int getScreenPixel(int x, int y){
+        return this.media.getPixel(x,y);
+    }
+
+    public void setScreenPixel(int x, int y){
+        this.media.setPixel(x, y);
     }
 
 }
