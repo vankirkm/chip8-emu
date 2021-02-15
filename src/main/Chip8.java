@@ -369,7 +369,7 @@ public class Chip8 {
 
         //update screen
         if(drawFlag){
-            emuDisplay.updateFrame();
+            emuDisplay.updateScreen();
             drawFlag = false;
         }
 

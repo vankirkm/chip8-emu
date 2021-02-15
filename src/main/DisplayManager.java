@@ -9,11 +9,7 @@ import java.awt.*;
 public class DisplayManager extends JFrame{
     private static final int WIDTH = 64;
     private static final int HEIGHT = 32;
-    private int scale = 12;
-    private int width = 64;
-    private int height = 32;
-    public int[][] graphics = new int[WIDTH][HEIGHT];
-    private Graphics gfx;
+    private Screen media = new Screen();
 
     public DisplayManager(){
 
@@ -32,14 +28,13 @@ public class DisplayManager extends JFrame{
         debug.setLayout(new BoxLayout(debug, BoxLayout.Y_AXIS));
         debug.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
 
-        Canvas media = new Canvas();
+
         media.setPreferredSize(new Dimension(640,480));
-        media.setBackground(Color.BLACK);
 
         JPanel graphics = new JPanel();
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
         graphics.setPreferredSize(new Dimension(650, 496));
-        graphics.add(gfx);
+        graphics.add(media);
 
         JPanel manual = new JPanel();
         manual.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
@@ -58,33 +53,8 @@ public class DisplayManager extends JFrame{
         this.setVisible(true);
     }
 
-    public void updateFrame(){
-        for(int y = 0; y < 32; y++){
-            for(int x = 0; x < 64; x++){
-                boolean color = false;
-                paintPixel(color, x, y);
-            }
-        }
+    public void updateScreen(){
+        this.media.paintScreen();
     }
-
-    public void paintPixel(boolean white, int x, int y){
-        if(white){
-            gfx.setColor(Color.WHITE);
-        }
-        else{
-            gfx.setColor(Color.BLACK);
-        }
-        gfx.fillRect(x * scale, y * scale, scale, scale);
-    }
-
-    public int getPixel(int x, int y){
-        return graphics[x][y];
-    }
-
-    public void setPixel(int x, int y){
-        graphics[x][y] ^= 1;
-    }
-
-
 
 }
