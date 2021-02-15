@@ -10,7 +10,10 @@ public class DisplayManager extends JFrame{
     private static final int WIDTH = 64;
     private static final int HEIGHT = 32;
     private int scale = 12;
+    private int width = 64;
+    private int height = 32;
     public int[][] graphics = new int[WIDTH][HEIGHT];
+    private Graphics gfx;
 
     public DisplayManager(){
 
@@ -24,8 +27,6 @@ public class DisplayManager extends JFrame{
         mainDisplay.setLayout(new BoxLayout(mainDisplay, BoxLayout.Y_AXIS));
         mainDisplay.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-
-
         JPanel debug = new JPanel();
         debug.setPreferredSize(new Dimension(200,600));
         debug.setLayout(new BoxLayout(debug, BoxLayout.Y_AXIS));
@@ -33,12 +34,12 @@ public class DisplayManager extends JFrame{
 
         Canvas media = new Canvas();
         media.setPreferredSize(new Dimension(640,480));
-        media.setBackground(new Color(22,22,22));
+        media.setBackground(Color.BLACK);
 
         JPanel graphics = new JPanel();
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
         graphics.setPreferredSize(new Dimension(650, 496));
-        graphics.add(media);
+        graphics.add(gfx);
 
         JPanel manual = new JPanel();
         manual.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
@@ -49,8 +50,6 @@ public class DisplayManager extends JFrame{
         root.add(mainDisplay);
         root.add(debug);
 
-
-
         this.getContentPane().add(root);
         this.setTitle("CHIP-8 Emu");
         this.setIconImage(new ImageIcon("img\\logo.jpg").getImage());
@@ -58,6 +57,34 @@ public class DisplayManager extends JFrame{
         this.pack();
         this.setVisible(true);
     }
+
+    public void updateFrame(){
+        for(int y = 0; y < 32; y++){
+            for(int x = 0; x < 64; x++){
+                boolean color = false;
+                paintPixel(color, x, y);
+            }
+        }
+    }
+
+    public void paintPixel(boolean white, int x, int y){
+        if(white){
+            gfx.setColor(Color.WHITE);
+        }
+        else{
+            gfx.setColor(Color.BLACK);
+        }
+        gfx.fillRect(x * scale, y * scale, scale, scale);
+    }
+
+    public int getPixel(int x, int y){
+        return graphics[x][y];
+    }
+
+    public void setPixel(int x, int y){
+        graphics[x][y] ^= 1;
+    }
+
 
 
 }

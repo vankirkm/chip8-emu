@@ -11,12 +11,14 @@ public class Chip8 {
     private char[] V;
     private short iReg;
     private short pCount;
-    private char[] gfx;
+    private char[][] gfx;
     private char delayTimer;
     private char soundTimer;
     private short[] stack;
     private short sPoint;
+    private boolean drawFlag;
     private char[] key;
+    DisplayManager emuDisplay = new DisplayManager();
     char[] fontSet =
     {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -38,14 +40,13 @@ public class Chip8 {
     };
 
     public Chip8(){
-        DisplayManager emuDisplay = new DisplayManager();
         this.pCount = 0x200;
         this.opcode = 0;
         this.iReg = 0;
         this.sPoint = 0;
         this.memory = new char[4096];
         this.V = new char[16];
-        this.gfx = new char[2048];
+        this.gfx = new char[32][64];
         this.stack = new short[16];
         this.key = new char[16];
 
@@ -76,6 +77,8 @@ public class Chip8 {
     }
 
     public void emulateCycle(){
+        int x = 0;
+        int y = 0;
         //get opcode
         this.opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
 
@@ -285,6 +288,7 @@ public class Chip8 {
             // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
                 System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
+                drawFlag = true;
                 this.pCount += 2;
                 break;
 
@@ -363,10 +367,22 @@ public class Chip8 {
                 break;
         }
 
+        //update screen
+        if(drawFlag){
+            emuDisplay.updateFrame();
+            drawFlag = false;
+        }
+
         //update delay timer
         if(this.delayTimer > 0){
             this.delayTimer -= 1;
         }
+
+        //update sound timer
+        if(this.soundTimer > 0) {
+            this.soundTimer -= 1;
+        }
+
 
     }
 }
