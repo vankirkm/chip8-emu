@@ -24,8 +24,8 @@ public class Screen extends JPanel {
         return graphics[x][y];
     }
 
-    public void setPixel(int x, int y){
-        graphics[x][y] ^= true;
+    public void setPixel(boolean p, int x, int y){
+        graphics[x][y] = p;
     }
 
     public void paintScreen(){

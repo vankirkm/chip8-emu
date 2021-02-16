@@ -57,8 +57,8 @@ public class DisplayManager extends JFrame{
         return this.media.getPixel(x,y);
     }
 
-    public void setScreenPixel(int x, int y){
-        this.media.setPixel(x, y);
+    public void setScreenPixel(boolean p, int x, int y){
+        this.media.setPixel(p, x, y);
     }
 
     public void clearGameScreen(){

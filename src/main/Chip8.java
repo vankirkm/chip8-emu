@@ -319,7 +319,7 @@ public class Chip8 {
         }
         refreshCycles++;
         try{
-            TimeUnit.MILLISECONDS.sleep(1000);
+            TimeUnit.MILLISECONDS.sleep(10);
         }catch(InterruptedException e){
             e.printStackTrace();
         }
@@ -519,7 +519,8 @@ public class Chip8 {
     // Annn - set iReg to nnn
     public void setIReg(short nnn){
         System.out.println("Command Annn - " + Integer.toHexString(opcode & 0xFFFF));
-        iReg = nnn;
+        iReg = (short)(nnn & 0x0FFF);
+        System.out.println(Integer.toHexString(iReg));
         pCount += 2;
     }
 
@@ -622,34 +623,46 @@ public class Chip8 {
     //dxyn - draw method
     public void drawSprite(char x, char y, int n){
         System.out.println("Command Dxyn - " + Integer.toHexString(opcode & 0xFFFF));
-        V[0xF] = 0;
-        for (int yLine = 0; yLine < n; yLine++) {
-            int pixel = memory[iReg + yLine];
+        byte readBytes = 0;
 
-            for (int xLine = 0; xLine < 8; xLine++) {
-                // check each bit (pixel) in the 8 bit row
-                if ((pixel & (0x80 >> xLine)) != 0) {
+        byte vf = (byte)0x0;
+        while(readBytes < n){
 
-                    // wrap pixels if they're drawn off screen
-                    int xCoord = x+xLine;
-                    int yCoord = y+yLine;
+            byte currentByte = (byte)(memory[iReg + readBytes]); //Read one byte
+            for(int i = 0; i <=7; i++){
+                //For every pixel
 
-                    if (xCoord < 64 && yCoord < 32) {
-                        // if pixel already exists, set carry (collision)
-                        if (emuDisplay.getScreenPixel(xCoord, yCoord) == true) {
-                            V[0xF] = 1;
-                        }
-                        // draw via xor
-                        emuDisplay.setScreenPixel(xCoord,yCoord);
-                    }
+                //Calculate real coordinate
+                int int_x = V[x] & 0xFF;
+                int int_y = V[y] & 0xFF;
+                int real_x = (int_x + i)%64;
+                int real_y = (int_y + readBytes)%32;
+
+
+                boolean previousPixel = emuDisplay.getScreenPixel(real_x, real_y); //Previous value of pixel
+                boolean newPixel = previousPixel ^ isBitSet(currentByte,7-i); //XOR
+
+                emuDisplay.setScreenPixel(newPixel,real_x, real_y);
+
+                if(previousPixel == true && newPixel == false){
+                    //A pixel has been erased
+                    vf = (byte)0x01;
                 }
+
             }
+
+            V[0xF] = (char)vf; //Set Vf. Will be 1 if a pixel has been erased
+            readBytes++;
         }
+
         drawFlag = true;
         pCount += 2;
     }
 
-
+    private  Boolean isBitSet(byte b, int bit)
+    {
+        return (b & (1 << bit)) != 0;
+    }
 
 
 
