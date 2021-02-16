@@ -17,7 +17,7 @@ public class Screen extends JPanel {
         else{
             gfx.setColor(Color.BLACK);
         }
-        gfx.fillRect(x * scale, y * scale, scale, scale);
+        gfx.fillRect((x * scale), (y * scale), scale, scale);
     }
 
     public boolean getPixel(int x, int y){

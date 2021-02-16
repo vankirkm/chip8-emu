@@ -319,13 +319,10 @@ public class Chip8 {
         }
         refreshCycles++;
         try{
-            TimeUnit.MILLISECONDS.sleep(10);
+            TimeUnit.MILLISECONDS.sleep(1000);
         }catch(InterruptedException e){
             e.printStackTrace();
         }
-
-
-
     }
 
     // 00E0 - clear the display
@@ -408,7 +405,7 @@ public class Chip8 {
         System.out.println("Command 7xkk - " + Integer.toHexString(opcode));
         char tmp = (char)(((V[x] + kk)) & 0x00FF);
         V[x] = tmp;
-        pCount +=2;
+        pCount += 2;
     }
 
     // 8xy0 - store the value of register Vy in register Vx
@@ -468,7 +465,7 @@ public class Chip8 {
         else{
             V[0xF] = 0;
         }
-        char tmp = (char)((V[x]) - (V[y]));
+        char tmp = (char)((V[x] - V[y]) & 0x00FF);
         V[x] = tmp;
         pCount += 2;
     }
@@ -503,7 +500,7 @@ public class Chip8 {
         System.out.println("Command 8xyE - " + Integer.toHexString(opcode));
         char tmp = (char)(V[x] >> 7);
         V[0xF] = tmp;
-        V[x] = (char)((V[x] * 2) & 0x00FF);
+        V[x] = (char)((V[x] << 2) & 0x00FF);
         pCount += 2;
     }
 
@@ -529,7 +526,7 @@ public class Chip8 {
     // Bnnn - set pCount to nnn plus the value of V0
     public void setPCount(short nnn){
         System.out.println("Command Bnnn - " + Integer.toHexString(opcode & 0xFFFF));
-        pCount = (short)((nnn + V[0]) & 0x0FFF);
+        pCount = (short)((nnn + V[0]));
     }
 
     // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
@@ -538,7 +535,7 @@ public class Chip8 {
         System.out.println("Command Cxyk - " + Integer.toHexString(opcode));
         Random r = new Random();
         int rand = r.nextInt(256);
-        V[x] = (char)(kk & rand);
+        V[x] = (char)((kk & rand) & 0x00FF);
         pCount += 2;
     }
 
@@ -571,8 +568,9 @@ public class Chip8 {
     // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
     public void addIReg(char x){
         System.out.println("Command Fx1E - " + Integer.toHexString(opcode));
-        short tmp = (short)(iReg + V[x]);
-        iReg = tmp;
+        int int_vx = V[x] & 0xFF; //Unsigned
+        int int_i = iReg & 0xFFFF; //Unsigned
+        iReg = (short)(int_vx + int_i);
         pCount += 2;
     }
 
@@ -580,7 +578,7 @@ public class Chip8 {
     // value of Vx
     public void setIRegHex(char x){
         System.out.println("Command Fx29 - " + Integer.toHexString(opcode));
-        iReg = (short)(memory[V[x]]);
+        iReg = (short)(V[x] * 5);
         pCount += 2;
     }
 
