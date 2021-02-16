@@ -328,7 +328,7 @@ public class Chip8 {
                             int xcoord = x + z;
                             int ycoord = y + i;
                             // if pixel already exists, set carry (collision)
-                            if (emuDisplay.getScreenPixel(xcoord, ycoord) == 1) {
+                            if (emuDisplay.getScreenPixel(xcoord, ycoord) == true) {
                                 this.V[0xF] = 1;
                             }
                             // draw via xor
@@ -442,13 +442,14 @@ public class Chip8 {
                 }
                 break;
         }
+
         this.refreshCycles++;
-        if(cycToRefresh % this.refreshCycles == 0){
+        if(this.cycToRefresh % this.refreshCycles == 0){
             this.refreshCycles = 0;
             //update screen
-            if(drawFlag){
+            if(this.drawFlag){
                 emuDisplay.updateScreen();
-                drawFlag = false;
+                this.drawFlag = false;
             }
 
             //update delay timer

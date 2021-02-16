@@ -8,11 +8,10 @@ public class Screen extends JPanel {
     private int scale = 12;
     private int width = 64 * scale;
     private int height = 32 * scale;
-    private int graphics[][] = new int[32][64];
+    private boolean graphics[][] = new boolean[32][64];
 
-    public void paintPixel(int pixel, int x, int y){
-        if(pixel > 0){
-            System.out.println("white");
+    public void paintPixel(boolean pixel, int x, int y){
+        if(pixel){
             gfx.setColor(Color.WHITE);
         }
         else{
@@ -21,12 +20,12 @@ public class Screen extends JPanel {
         gfx.fillRect(x * scale, y * scale, scale, scale);
     }
 
-    public int getPixel(int x, int y){
+    public boolean getPixel(int x, int y){
         return graphics[y][x];
     }
 
     public void setPixel(int x, int y){
-        int i = graphics[y][x] ^ 1;
+        boolean i = graphics[y][x] ^ true;
         graphics[y][x] = i;
     }
 
@@ -45,7 +44,7 @@ public class Screen extends JPanel {
     public void clearScreen(){
         for(int y = 0; y < 32; y++){
             for(int x = 0; x < 64; x++){
-                this.graphics[y][x] = 0;
+                this.graphics[y][x] = false;
             }
         }
     }

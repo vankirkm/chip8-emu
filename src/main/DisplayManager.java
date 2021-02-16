@@ -56,7 +56,7 @@ public class DisplayManager extends JFrame{
         this.media.paintScreen();
     }
 
-    public int getScreenPixel(int x, int y){
+    public boolean getScreenPixel(int x, int y){
         return this.media.getPixel(x,y);
     }
 
