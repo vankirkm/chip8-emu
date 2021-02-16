@@ -44,23 +44,23 @@ public class Chip8 {
     };
 
     public Chip8(){
-        this.cpuFreq = 500;
-        this.cycToRefresh = this.cpuFreq / 60;
-        this.refreshCycles = 0;
-        this.pCount = 0x200;
-        this.opcode = 0;
-        this.iReg = 0;
-        this.sPoint = 0;
-        this.memory = new char[4096];
-        this.V = new char[16];
-        this.gfx = new char[32][64];
-        this.stack = new short[16];
-        this.key = new char[16];
+        cpuFreq = 500;
+        cycToRefresh = cpuFreq / 60;
+        refreshCycles = 0;
+        pCount = 0x200;
+        opcode = 0;
+        iReg = 0;
+        sPoint = 0;
+        memory = new char[4096];
+        V = new char[16];
+        gfx = new char[32][64];
+        stack = new short[16];
+        key = new char[16];
 
         //load fontset into memory
         for(int i = 0; i < fontSet.length; i++){
-            this.memory[i] = fontSet[i];
-            System.out.println(Integer.toBinaryString(this.memory[i]));
+            char bte = fontSet[i];
+            memory[i] = bte;
         }
     }
 
@@ -72,7 +72,7 @@ public class Chip8 {
             try{
                 while((ch = fis.read()) != -1){
                     System.out.println((instCount + 0x200) + " " + ch);
-                    this.memory[instCount + 0x200] = (char) ch;
+                    memory[instCount + 0x200] = (char) ch;
                     instCount++;
                 }
             }catch (IOException e){
@@ -85,275 +85,160 @@ public class Chip8 {
     }
 
     public void emulateCycle(){
-        int x = 0;
-        int y = 0;
+
+
         //get opcode
-        this.opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
+        opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
+        byte x = getX();
+        byte y = getY();
+        byte n = getN();
+        char kk = getKK();
+        short nnn = getNNN();
 
         //decode opcode
-        switch(this.opcode & 0xF000){
+        switch(opcode & 0xF000){
 
             //multiple cases where the first 4 bits of the opcode are 0, so break into another switch to look at
             //the last byte of the opcode
             case 0x0000:
-                switch(this.opcode & 0x00FF){
-                    // 00E0 - clear the display
+                switch(opcode & 0x00FF){
+                    // 00E0
                     case 0x00E0:
-                        emuDisplay.clearGameScreen();
-                        this.pCount += 2;
+                        clearScreen();
                         break;
 
-                    // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
+                    // 00EE
                     case 0x00EE:
-                        this.pCount = this.stack[sPoint];
-                        this.sPoint = (byte)((this.sPoint - 1) & 0x00FF);
+                        pCountStack();
                         break;
                 }
                 break;
 
-            // 1nnn - set pCount to nnn
+            // 1nnn
             case 0x1000:
-                System.out.println("Command 1nnn - " + Integer.toHexString(this.opcode));
-                System.out.println("nnn: " + Integer.toHexString((this.opcode & 0x0FFF)));
-                this.pCount = (short)(this.opcode & 0x0FFF);
+                setPN(nnn);
                 break;
 
-            // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
+            // 2nnn
             case 0x2000:
-                System.out.println("Command 2nnn - " + Integer.toHexString(this.opcode));
-                stack[(++this.sPoint)] = this.pCount;
-                this.pCount = (short)(opcode & 0x0FFF);
+                incSPoint(nnn);
                 break;
 
-            // 3xkk - Jump over next instruction if register Vx and kk are equal
+            // 3xkk
             case 0x3000:
-                System.out.println("Command 3xkk - " + Integer.toHexString(this.opcode));
-                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
-                System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                if(this.V[(this.opcode & 0x0F00) >>> 8] == (this.opcode & 0x00FF)){
-                    this.pCount += 4;
-                }
-                else{
-                    this.pCount +=2;
-                }
+                jmpEqual(x, kk);
                 break;
 
-            // 4xkk - compare the register Vx to kk and if they are not equal, skip next instruction
+            // 4xkk
             case 0x4000:
-                System.out.println("Command 4xkk - " + Integer.toHexString(this.opcode));
-                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
-                System.out.println(Integer.toHexString((this.opcode & 0x0F00) >> 8));
-                System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                if((this.V[(this.opcode & 0x0F00) >>> 8]) != (this.opcode & 0x00FF)){
-                    this.pCount += 4;
-                }
-                else{
-                    this.pCount += 2;
-                }
+                jmpNotEqual();
                 break;
 
-            // 5xy0 - compare register Vx to Vy and if they are equal, skip next instruction
+            // 5xy0
             case 0x5000:
-                System.out.println("Command 5xy0 - " + Integer.toHexString(this.opcode));
-                if(this.V[(this.opcode & 0x0F00) >>> 8] == this.V[(this.opcode & 0x00F0) >>> 4]){
-                    this.pCount += 4;
-                }
-                else{
-                    this.pCount += 2;
-                }
+                cmpEqual();
                 break;
 
-            // 6xkk - put the value kk into register Vx, increment pCount by 2.
+            // 6xkk
             case 0x6000:
-                System.out.println("Command 6xkk - " + Integer.toHexString(this.opcode));
-                System.out.println("x: " + Integer.toHexString((this.opcode & 0x0F00) >>> 8));
-                System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                this.V[((this.opcode & 0x0F00) >>> 8)] = (char)(this.opcode & 0x00FF);
-                pCount += 2;
+                putKK();
                 break;
 
-            // 7xkk - add the value of kk to the value of register Vx, then store the result in Vx
+            // 7xkk
             case 0x7000:
-                System.out.println("Command 7xkk - " + Integer.toHexString(this.opcode));
-                this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8] + (this.opcode & 0x0FF)) & 0x00FF);
-                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >>> 8]));
-                this.pCount +=2;
+                addKK(x, kk);
                 break;
 
             //multiple cases where the first 4 bits of the opcode are 8, so break into another switch to look at
             //the last 4 bits of the opcode
             case 0x8000:
-                switch(this.opcode & 0x000F){
-                    // 8xy0 - store the value of register Vy in register Vx
+                switch(opcode & 0x000F){
+                    // 8xy0
                     case 0x0000:
-                        System.out.println("Command 8xy0 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >>> 8] = this.V[(this.opcode & 0x00F0) >>> 4];
-                        this.pCount += 2;
+                        putVY();
                         break;
 
-                    // 8xy1 - perform OR operation on values of Vx and Vy, then store the results in Vx
+                    // 8xy1
                     case 0x0001:
-                        System.out.println("Command 8xy1 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] | this.V[(this.opcode & 0x00F0) >>> 4]);
-                        this.pCount += 2;
+                        orVY();
                         break;
 
-                    // 8xy2 - perform AND operation on values of Vx and Vy, then store the results in Vx
+                    // 8xy2
                     case 0x0002:
-                        System.out.println("Command 8xy2 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] & this.V[(this.opcode & 0x00F0) >>> 4]);
-                        this.pCount += 2;
+                        andVY();
                         break;
 
-                    // 8xy3 - perform XOR operation on values of Vx and Vy, then store the results in Vx
+                    // 8xy3
                     case 0x0003:
-                        System.out.println("Command 8xy3 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] ^ this.V[(this.opcode & 0x00F0) >>> 4]);
-                        this.pCount += 2;
+                        xorVY();
                         break;
 
-                    // 8xy4 - The values of Vx and Vy are added together. If the result is greater than 8 bits,
-                    //set VF to 1, otherwise 0. only the lowest 8 bits of the result are kept and stored in Vx
+                    // 8xy4
                     case 0x0004:
-                        System.out.println("Command 8xy4 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        if((this.V[(this.opcode & 0x0F00) >>> 8] + this.V[(this.opcode & 0x00F0) >>> 4]) > 255){
-                            this.V[0xF] = 1;
-                        }
-                        else{
-                            this.V[0xF] = 0;
-                        }
-                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8] + this.V[(this.opcode & 0x00F0) >>> 4]) & 0x00FF);
-                        this.pCount += 2;
+                        addVY();
                         break;
 
-                    // 8xy5 - if Vx > Vy, set VF to 1, otherwise 0. then Vy is subtracted from Vx,
-                    //and the results are stored in Vx
+                    // 8xy5
                     case 0x0005:
-                        System.out.println("Command 8xy5 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        if(this.V[(this.opcode & 0x0F00) >>> 8] > this.V[(this.opcode & 0x00F0) >>> 4]){
-                            this.V[0xF] = 1;
-                        }
-                        else{
-                            this.V[0xF] = 0;
-                        }
-                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8]) - (this.V[(this.opcode & 0x00F0) >>> 4]));
-                        this.pCount += 2;
+                        subVY();
                         break;
 
-                    // 8xy6 - if the least significant bit of Vx is 1, then VF is set to 1, otherwise 0.
-                    //Then Vx is divided by 2.
+                    // 8xy6
                     case 0x0006:
-                        System.out.println("Command 8xy6 - " + Integer.toHexString(this.opcode));
-                        this.V[0xF] = (char)(this.V[(opcode & 0x0F00) >> 8] & 0x0001);
-                        this.V[(opcode & 0x0F00) >>> 8] = (char)(this.V[(opcode & 0x0F00) >>> 8] >>> 1);
-                        this.pCount += 2;
+                        leastSigBit();
                         break;
 
-                    // 8xy7 - if Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
-                    //and the results stored in Vx
+                    // 8xy7
                     case 0x0007:
-                        System.out.println("Command 8xy7 - " + Integer.toHexString(this.opcode));
-                        if(this.V[(opcode & 0x00F0) >> 4] > this.V[(opcode & 0x0F00) >> 8]){
-                            this.V[0xF] = 1;
-                        }
-                        else{
-                            this.V[0xF] = 0;
-                        }
-                        this.V[(opcode & 0x0F00) >> 8] = (char)((this.V[(opcode & 0x00F0) >> 4] - this.V[(opcode & 0x0F00) >> 8]) & 0x00FF);
-                        this.pCount += 2;
+                        subtractVX(x, y);
                         break;
 
-                    // 8xyE - if the most significant bit of Vx is 1, then VF is set to 1, otherwise 0.
-                    //Then Vx is multiplied by 2.
+                    // 8xyE
                     case 0x000E:
-                        System.out.println("Command 8xyE - " + Integer.toHexString(this.opcode));
-                        char tmp = (char)(this.V[(opcode & 0x0F00) >> 8] >> 7);
-                        System.out.println(Integer.toHexString(tmp));
-                        this.V[0xF] = tmp;
-                        System.out.println(Integer.toHexString(this.V[(opcode & 0x0F00) >> 8] * 2));
-                        this.V[(opcode & 0x0F00) >> 8] = (char)((this.V[(opcode & 0x0F00) >> 8] * 2) & 0x00FF);
-                        this.pCount += 2;
+                        mostSigBit();
                         break;
                 }
                 break;
 
-            // 9xy0 - compare values of Vx and Vy and if they are not equal, skip next instruction
+            // 9xy0
             case 0x9000:
-                System.out.println("Command 9xy0 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                if(this.V[(this.opcode & 0x0F00) >> 8] == this.V[(this.opcode & 0x00F0) >> 4]){
-                    this.pCount += 2;
-                }
-                else{
-                    this.pCount += 4;
-                }
+                cmpVXVY(x, y);
                 break;
 
-            // Annn - set iReg to nnn
+            // Annn
             case 0xA000:
-                System.out.println("Command Annn - " + Integer.toHexString(this.opcode & 0xFFFF));
-                System.out.println("nnn: " + Integer.toHexString(this.opcode & 0x0FFF));
-                this.iReg = (short)(this.opcode & 0x0FFF);
-                this.pCount += 2;
+                setIReg(nnn);
                 break;
 
-            // Bnnn - set pCount to nnn plus the value of V0
+            // Bnnn
             case 0xB000:
-                System.out.println("Command Bnnn - " + Integer.toHexString(this.opcode & 0xFFFF));
-                this.pCount = (short)(((this.opcode & 0x0FFF) + this.V[0]) & 0x0FFF);
+                setPCount(nnn);
                 break;
 
-            // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
-            // store the results in Vx
+            // Cxkk
             case 0xC000:
-                System.out.println("Command Cxyk - " + Integer.toHexString(this.opcode));
-                Random r = new Random();
-                int rand = r.nextInt(256);
-                this.V[(this.opcode & 0x0F00) >> 8] = (char)((this.opcode & 0x00FF) & rand);
-                this.pCount += 2;
+                putRandVX(x, kk);
                 break;
 
             // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
-                System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
-                x = this.V[(opcode & 0x0F00) >>> 8];
-
-                y = this.V[(opcode & 0x00F0) >>> 4];
-                System.out.println(x);
-                System.out.println(y);
-                int n = opcode & 0x000F;
-                this.V[0xF] = 0;
-                for(int i = 0; i < n; i++){
-                    for(int z = 0; z < 8; z++){
-                        if (x < 64 && y < 32) {
-                            int xcoord = x + z;
-                            int ycoord = y + i;
-                            // if pixel already exists, set carry (collision)
-                            if (emuDisplay.getScreenPixel(xcoord, ycoord) == true) {
-                                this.V[0xF] = 1;
-                            }
-                            // draw via xor
-                            emuDisplay.setScreenPixel(xcoord,ycoord);
-                        }
-                    }
-                }
-                drawFlag = true;
-                this.pCount += 2;
+                drawSprite(x, y, n);
                 break;
 
             //multiple cases where the first 4 bits of the opcode are E, so break into another switch to look at
             //the last byte of the opcode
             case 0xE000:
-                switch(this.opcode & 0x00FF){
+                switch(opcode & 0x00FF){
                     // Ex9E - checks the keyboard, and if the key corresponding to the value of Vx is currently
                     //in the down position, pCount is incremented by 2
                     case 0x009E:
-                        System.out.println("Command Ex9E - " + Integer.toHexString(this.opcode));
+                        System.out.println("Command Ex9E - " + Integer.toHexString(opcode));
                         break;
 
                     // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
                     //in the up position, pCount is incremented by 2
                     case 0x00A1:
-                        System.out.println("Command ExA1 - " + Integer.toHexString(this.opcode));
+                        System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
                         break;
                 }
                 break;
@@ -361,109 +246,440 @@ public class Chip8 {
             //multiple cases where the first 4 bits of the opcode are F, so break into another switch to look at
             //the last byte of the opcode
             case 0xF000:
-                switch(this.opcode & 0x00FF){
-                    // Fx07 - The value of delayTimer is placed into Vx
+                switch(opcode & 0x00FF){
+                    // Fx07
                     case 0x0007:
-                        System.out.println("Command Fx07 - " + Integer.toHexString(this.opcode));
-                        this.V[(this.opcode & 0x0F00) >>> 8] = delayTimer;
-                        this.pCount += 2;
+                        putDelayTimer(x);
                         break;
 
-                    // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
+                    // Fx0A
                     case 0x000A:
-                        System.out.println("Command Fx0A - " + Integer.toHexString(this.opcode));
+                        pauseExec();
                         break;
 
-                    // Fx15 - delayTimer is set equal to the value of Vx
+                    // Fx15
                     case 0x0015:
-                        System.out.println("Command Fx15 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.delayTimer = this.V[(this.opcode & 0x0F00) >>> 8];
-                        System.out.println("delayTimer: " + Integer.toHexString(this.delayTimer));
-                        this.pCount += 2;
+                        setDelayTimerVX(x);
                         break;
 
-                    // Fx18 - soundTimer is set equal to the value of Vx
+                    // Fx18
                     case 0x0018:
-                        System.out.println("Command Fx18 - " + Integer.toHexString(this.opcode));
-                        soundTimer = this.V[(this.opcode & 0x0F00) >>> 8];
-                        this.pCount += 2;
+                        setSoundTimer(x);
                         break;
 
-                    // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
+                    // Fx1E
                     case 0x001E:
-                        System.out.println("Command Fx1E - " + Integer.toHexString(this.opcode));
-                        iReg = (short)(iReg + this.V[(this.opcode & 0x0F00) >>> 8]);
-                        this.pCount += 2;
+                        addIReg(x);
                         break;
 
-                    // Fx29 - the value of iReg is set to location of the hexadecimal sprite corresponding to the
-                    // value of Vx
+                    // Fx29
                     case 0x0029:
-                        System.out.println("Command Fx29 - " + Integer.toHexString(this.opcode));
-                        iReg = (short)(this.V[(this.opcode & 0x0F00) >>> 8]);
-                        this.pCount += 2;
+                        setIRegHex(x);
                         break;
 
-                    // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
-                    // the tens digit at location I+1, and the ones digit at location I+2.
+                    // Fx33
                     case 0x0033:
-                        System.out.println("Command Fx33 - " + Integer.toHexString(this.opcode));
-                        int vx = this.V[(this.opcode & 0x0F00) >>> 8];
-                        int hundreds = vx / 100;
-                        vx = vx - (hundreds * 100);
-                        int tens = vx / 10;
-                        vx = vx - (tens * 10);
-                        int units = vx;
-                        this.memory[iReg] = (char)hundreds;
-                        this.memory[iReg + 1] = (char)tens;
-                        this.memory[iReg + 2] = (char)units;
-                        this.pCount += 2;
+                        putIRegValues(x);
                         break;
 
-                    // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
+                    // Fx55
                     case 0x0055:
-                        System.out.println("Command Fx55 - " + Integer.toHexString(this.opcode));
-                        int tmp = (this.opcode & 0x0F00) >> 8;
-                        for(int i = 0; i <= tmp; i++){
-                            this.memory[iReg + i] = this.V[i];
-                        }
-                        this.pCount += 2;
+                        regToMem(x);
                         break;
 
-                    // Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
+                    // Fx65
                     case 0x0065:
-                        System.out.println("Command Fx65 - " + Integer.toHexString(this.opcode));
-                        int tmpX = (this.opcode & 0x0F00) >> 8;
-                        for(int i = 0; i <= tmpX; i++){
-                            this.V[i] = this.memory[iReg + i];
-                        }
-                        this.pCount +=2;
+                        memToReg(x);
                         break;
                 }
                 break;
         }
 
-        this.refreshCycles++;
-        if(this.cycToRefresh % this.refreshCycles == 0){
-            this.refreshCycles = 0;
+        refreshCycles++;
+        if(cycToRefresh % refreshCycles == 0){
+            refreshCycles = 0;
             //update screen
-            if(this.drawFlag){
+            if(drawFlag){
                 emuDisplay.updateScreen();
-                this.drawFlag = false;
+                drawFlag = false;
             }
 
             //update delay timer
-            if(this.delayTimer > 0){
-                this.delayTimer -= 1;
+            if(delayTimer > 0){
+                delayTimer -= 1;
             }
 
             //update sound timer
-            if(this.soundTimer > 0) {
-                this.soundTimer -= 1;
+            if(soundTimer > 0) {
+                soundTimer -= 1;
             }
         }
 
 
 
     }
+
+    private boolean isBitSet(byte b, int bit){
+        return (b & (1 << bit)) != 0;
+    }
+
+    // 00E0 - clear the display
+    public void clearScreen(){
+        emuDisplay.clearGameScreen();
+        pCount += 2;
+    }
+
+    // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
+    public void pCountStack(){
+        short tmp = stack[sPoint];
+        pCount = tmp;
+        sPoint -= 1;
+    }
+
+    // 1nnn - set pCount to nnn
+    public void setPN(short nnn){
+        System.out.println("Command 1nnn - " + Integer.toHexString(opcode));
+        System.out.println("nnn: " + Integer.toHexString((opcode & 0x0FFF)));
+        pCount = nnn;
+    }
+
+    // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
+    public void incSPoint(short nnn){
+        System.out.println("Command 2nnn - " + Integer.toHexString(opcode));
+        short tmp = pCount;
+        sPoint++;
+        stack[sPoint] = tmp;
+        pCount = (short)nnn;
+    }
+
+    // 3xkk - Jump over next instruction if register Vx and kk are equal
+    public void jmpEqual(byte x, char kk){
+        System.out.println("Command 3xkk - " + Integer.toHexString(opcode));
+        System.out.println("Vx: " + Integer.toHexString(V[(opcode & 0x0F00) >> 8]));
+        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
+        if(V[(opcode & 0x0F00) >>> 8] == (opcode & 0x00FF)){
+            pCount += 4;
+        }
+        else{
+            pCount +=2;
+        }
+    }
+
+    // 4xkk - compare the register Vx to kk and if they are not equal, skip next instruction
+    public void jmpNotEqual(){
+        System.out.println("Command 4xkk - " + Integer.toHexString(opcode));
+        System.out.println("Vx: " + Integer.toHexString(V[(opcode & 0x0F00) >> 8]));
+        System.out.println(Integer.toHexString((opcode & 0x0F00) >> 8));
+        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
+        if((V[(opcode & 0x0F00) >>> 8]) != (opcode & 0x00FF)){
+            pCount += 4;
+        }
+        else{
+            pCount += 2;
+        }
+    }
+
+    // 5xy0 - compare register Vx to Vy and if they are equal, skip next instruction
+    public void cmpEqual(){
+        System.out.println("Command 5xy0 - " + Integer.toHexString(opcode));
+        if(V[(opcode & 0x0F00) >>> 8] == V[(opcode & 0x00F0) >>> 4]){
+            pCount += 4;
+        }
+        else{
+            pCount += 2;
+        }
+    }
+
+    // 6xkk - put the value kk into register Vx, increment pCount by 2.
+    public void putKK(){
+        System.out.println("Command 6xkk - " + Integer.toHexString(opcode));
+        System.out.println("x: " + Integer.toHexString((opcode & 0x0F00) >>> 8));
+        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
+        V[((opcode & 0x0F00) >>> 8)] = (char)(opcode & 0x00FF);
+        pCount += 2;
+    }
+
+    // 7xkk - add the value of kk to the value of register Vx, then store the result in Vx
+    public void addKK(byte x, char kk){
+        System.out.println("Command 7xkk - " + Integer.toHexString(opcode));
+        char tmp = (char)((V[x] + kk) + 0x00FF);
+        V[x] = tmp;
+        pCount +=2;
+    }
+
+    // 8xy0 - store the value of register Vy in register Vx
+    public void putVY(){
+        System.out.println("Command 8xy0 - " + Integer.toHexString(opcode & 0xFFFF));
+        char tmp = V[(opcode & 0x00F0) >>> 4];
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy1 - perform OR operation on values of Vx and Vy, then store the results in Vx
+    public void orVY(){
+        System.out.println("Command 8xy1 - " + Integer.toHexString(opcode & 0xFFFF));
+        char tmp = (char)(V[(opcode & 0x0F00) >>> 8] | V[(opcode & 0x00F0) >>> 4]);
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy2 - perform AND operation on values of Vx and Vy, then store the results in Vx
+    public void andVY(){
+        System.out.println("Command 8xy2 - " + Integer.toHexString(opcode & 0xFFFF));
+        char tmp = (char)(V[(opcode & 0x0F00) >>> 8] & V[(opcode & 0x00F0) >>> 4]);
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy3 - perform XOR operation on values of Vx and Vy, then store the results in Vx
+    public void xorVY(){
+        System.out.println("Command 8xy3 - " + Integer.toHexString(opcode & 0xFFFF));
+        char tmp = (char)(V[(opcode & 0x0F00) >>> 8] ^ V[(opcode & 0x00F0) >>> 4]);
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy4 - The values of Vx and Vy are added together. If the result is greater than 8 bits,
+    //set VF to 1, otherwise 0. only the lowest 8 bits of the result are kept and stored in Vx
+    public void addVY(){
+        System.out.println("Command 8xy4 - " + Integer.toHexString(opcode & 0xFFFF));
+        if((V[(opcode & 0x0F00) >>> 8] + V[(opcode & 0x00F0) >>> 4]) > 255){
+            V[0xF] = 1;
+        }
+        else{
+            V[0xF] = 0;
+        }
+        char tmp = (char)((V[(opcode & 0x0F00) >>> 8] + V[(opcode & 0x00F0) >>> 4]) & 0x00FF);
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy5 - if Vx > Vy, set VF to 1, otherwise 0. then Vy is subtracted from Vx,
+    //and the results are stored in Vx
+    public void subVY(){
+        System.out.println("Command 8xy5 - " + Integer.toHexString(opcode & 0xFFFF));
+        if(V[(opcode & 0x0F00) >>> 8] > V[(opcode & 0x00F0) >>> 4]){
+            V[0xF] = 1;
+        }
+        else{
+            V[0xF] = 0;
+        }
+        char tmp = (char)((V[(opcode & 0x0F00) >>> 8]) - (V[(opcode & 0x00F0) >>> 4]));
+        V[(opcode & 0x0F00) >>> 8] = tmp;
+        pCount += 2;
+    }
+
+    // 8xy6 - if the least significant bit of Vx is 1, then VF is set to 1, otherwise 0.
+    //Then Vx is divided by 2.
+    public void leastSigBit(){
+        System.out.println("Command 8xy6 - " + Integer.toHexString(opcode));
+        V[0xF] = (char)(V[(opcode & 0x0F00) >> 8] & 0x0001);
+        V[(opcode & 0x0F00) >>> 8] = (char)(V[(opcode & 0x0F00) >>> 8] >>> 1);
+        pCount += 2;
+    }
+
+    // 8xy7 - if Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
+    //and the results stored in Vx
+    public void subtractVX(byte x, byte y){
+        System.out.println("Command 8xy7 - " + Integer.toHexString(opcode));
+        if(V[y] > V[x]){
+            V[0xF] = 1;
+        }
+        else{
+            V[0xF] = 0;
+        }
+        char tmp = (char)((V[y] - V[x]) & 0x00FF);
+        V[x] = tmp;
+        pCount += 2;
+    }
+
+    // 8xyE - if the most significant bit of Vx is 1, then VF is set to 1, otherwise 0.
+    //Then Vx is multiplied by 2.
+    public void mostSigBit(){
+        System.out.println("Command 8xyE - " + Integer.toHexString(opcode));
+        char tmp = (char)(V[(opcode & 0x0F00) >> 8] >> 7);
+        System.out.println(Integer.toHexString(tmp));
+        V[0xF] = tmp;
+        System.out.println(Integer.toHexString(V[(opcode & 0x0F00) >> 8] * 2));
+        V[(opcode & 0x0F00) >> 8] = (char)((V[(opcode & 0x0F00) >> 8] * 2) & 0x00FF);
+        pCount += 2;
+    }
+
+    // 9xy0 - compare values of Vx and Vy and if they are not equal, skip next instruction
+    public void cmpVXVY(byte x, byte y){
+        System.out.println("Command 9xy0 - " + Integer.toHexString(opcode & 0xFFFF));
+        if(V[(opcode & 0x0F00) >> 8] == V[(opcode & 0x00F0) >> 4]){
+            pCount += 2;
+        }
+        else{
+            pCount += 4;
+        }
+    }
+
+
+    // Annn - set iReg to nnn
+    public void setIReg(short nnn){
+        System.out.println("Command Annn - " + Integer.toHexString(opcode & 0xFFFF));
+        iReg = nnn;
+        pCount += 2;
+    }
+
+    // Bnnn - set pCount to nnn plus the value of V0
+    public void setPCount(short nnn){
+        System.out.println("Command Bnnn - " + Integer.toHexString(opcode & 0xFFFF));
+        pCount = (short)((nnn + V[0]) & 0x0FFF);
+    }
+
+    // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
+    // store the results in Vx
+    public void putRandVX(byte x, char kk){
+        System.out.println("Command Cxyk - " + Integer.toHexString(opcode));
+        Random r = new Random();
+        int rand = r.nextInt(256);
+        V[x] = (char)(kk & rand);
+        pCount += 2;
+    }
+
+    // Fx07 - The value of delayTimer is placed into Vx
+    public void putDelayTimer(byte x){
+        System.out.println("Command Fx07 - " + Integer.toHexString(opcode));
+        V[x] = delayTimer;
+        pCount += 2;
+    }
+
+    // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
+    public void pauseExec(){
+        System.out.println("Command Fx0A - " + Integer.toHexString(opcode));
+    }
+
+    // Fx15 - delayTimer is set equal to the value of Vx
+    public void setDelayTimerVX(byte x){
+        System.out.println("Command Fx15 - " + Integer.toHexString(opcode & 0xFFFF));
+        delayTimer = V[x];
+        pCount += 2;
+    }
+
+    // Fx18 - soundTimer is set equal to the value of Vx
+    public void setSoundTimer(byte x){
+        System.out.println("Command Fx18 - " + Integer.toHexString(opcode));
+        soundTimer = V[x];
+        pCount += 2;
+    }
+
+    // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
+    public void addIReg(byte x){
+        System.out.println("Command Fx1E - " + Integer.toHexString(opcode));
+        short tmp = (short)(iReg + V[x]);
+        iReg = tmp;
+        pCount += 2;
+    }
+
+    // Fx29 - the value of iReg is set to location of the hexadecimal sprite corresponding to the
+    // value of Vx
+    public void setIRegHex(byte x){
+        System.out.println("Command Fx29 - " + Integer.toHexString(opcode));
+        iReg = (short)(memory[V[x]]);
+        pCount += 2;
+    }
+
+    // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
+    // the tens digit at location I+1, and the ones digit at location I+2.
+    public void putIRegValues(byte x){
+        System.out.println("Command Fx33 - " + Integer.toHexString(opcode));
+        int vx = V[x];
+        int hundreds = vx / 100;
+        vx = vx - (hundreds * 100);
+        int tens = vx / 10;
+        vx = vx - (tens * 10);
+        int units = vx;
+        memory[iReg] = (char)hundreds;
+        memory[iReg + 1] = (char)tens;
+        memory[iReg + 2] = (char)units;
+        pCount += 2;
+    }
+
+    // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
+    public void regToMem(byte x){
+        System.out.println("Command Fx55 - " + Integer.toHexString(opcode));
+        int tmp = x;
+        for(int i = 0; i <= tmp; i++){
+            memory[iReg + i] = V[i];
+        }
+        pCount += 2;
+    }
+
+    //// Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
+    public void memToReg(byte x){
+        System.out.println("Command Fx65 - " + Integer.toHexString(opcode));
+        int tmpX = x;
+        for(int i = 0; i <= tmpX; i++){
+            V[i] = memory[iReg + i];
+        }
+        pCount +=2;
+    }
+
+
+    //dxyn - draw method
+    public void drawSprite(int x, int y, int n){
+        System.out.println("Command Dxyn - " + Integer.toHexString(opcode & 0xFFFF));
+        byte readBytes = 0;
+        byte vf = (byte)0x0;
+        while(readBytes < n){
+
+            byte currentByte = (byte)memory[(iReg + readBytes)]; //Read one byte
+            for(int i = 0; i <=7; i++){
+
+                //Calculate real coordinate
+                int int_x = V[x];
+                int int_y = V[y];
+                //System.out.println(int_x + " " + int_y);
+                int real_x = (int_x + i)%64;
+                int real_y = (int_y + readBytes)%32;
+
+                boolean previousPixel = emuDisplay.getScreenPixel(real_x,real_y); //Previous value of pixel
+
+                boolean newPixel = previousPixel ^ isBitSet(currentByte,7-i); //XOR
+                System.out.println(previousPixel + " " + newPixel);
+
+                emuDisplay.setScreenPixel(newPixel, real_x, real_y);
+
+                if(previousPixel == true && newPixel == false){
+                    vf = (byte)0x01;
+                }
+
+            }
+
+            V[0xF] = (char)vf;
+            readBytes++;
+        }
+
+        drawFlag = true;
+        pCount += 2;
+    }
+
+
+
+
+
+    //methods to extract data from opcodes
+    public byte getX(){
+        return (byte)(opcode & 0x0F00 >> 8);
+    }
+
+    public byte getY(){
+        return (byte)(opcode & 0x00F0 >> 4);
+    }
+
+    public byte getN(){
+        return (byte)(opcode & 0x000F);
+    }
+
+    public short getNNN(){
+        return (short)(opcode & 0x0FFF);
+    }
+
+    public char getKK(){
+        return (char)(opcode & 0x00FF);
+    }
+
 }

@@ -7,12 +7,11 @@ import java.awt.*;
 
 
 public class DisplayManager extends JFrame{
-    private static final int WIDTH = 64;
-    private static final int HEIGHT = 32;
-    private Screen media = new Screen();
+    private Screen media;
 
     public DisplayManager(){
-
+        this.media = new Screen();
+        media.setPreferredSize(new Dimension(640,320));
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
         Border loweredbevel = BorderFactory.createLoweredBevelBorder();
         JPanel root = new JPanel();
@@ -28,11 +27,9 @@ public class DisplayManager extends JFrame{
         debug.setLayout(new BoxLayout(debug, BoxLayout.Y_AXIS));
         debug.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
 
-        media.setPreferredSize(new Dimension(640,480));
-
         JPanel graphics = new JPanel();
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
-        graphics.setPreferredSize(new Dimension(650, 496));
+        graphics.setPreferredSize(new Dimension(1000, 1000));
         graphics.add(media);
 
         JPanel manual = new JPanel();
@@ -60,8 +57,8 @@ public class DisplayManager extends JFrame{
         return this.media.getPixel(x,y);
     }
 
-    public void setScreenPixel(int x, int y){
-        this.media.setPixel(x, y);
+    public void setScreenPixel(boolean p, int x, int y){
+        this.media.setPixel(p, x, y);
     }
 
     public void clearGameScreen(){

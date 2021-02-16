@@ -8,7 +8,7 @@ public class Screen extends JPanel {
     private int scale = 12;
     private int width = 64 * scale;
     private int height = 32 * scale;
-    private boolean graphics[][] = new boolean[32][64];
+    private boolean graphics[][] = new boolean[64][32];
 
     public void paintPixel(boolean pixel, int x, int y){
         if(pixel){
@@ -21,12 +21,11 @@ public class Screen extends JPanel {
     }
 
     public boolean getPixel(int x, int y){
-        return graphics[y][x];
+        return graphics[x][y];
     }
 
-    public void setPixel(int x, int y){
-        boolean i = graphics[y][x] ^ true;
-        graphics[y][x] = i;
+    public void setPixel(boolean p, int x, int y){
+        graphics[x][y] = p;
     }
 
     public void paintScreen(){
@@ -36,7 +35,7 @@ public class Screen extends JPanel {
     public void paintFullScreen(){
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 64; x++) {
-                paintPixel(graphics[y][x], x, y);
+                paintPixel(graphics[x][y], x, y);
             }
         }
     }
@@ -44,7 +43,7 @@ public class Screen extends JPanel {
     public void clearScreen(){
         for(int y = 0; y < 32; y++){
             for(int x = 0; x < 64; x++){
-                this.graphics[y][x] = false;
+                graphics[x][y] = false;
             }
         }
     }
@@ -57,4 +56,9 @@ public class Screen extends JPanel {
         gfx.fillRect(0, 0, width, height);
         paintFullScreen();
     }
+
+    public Dimension getPreferredSize(){
+        return new Dimension(width, height);
+    }
+
 }
