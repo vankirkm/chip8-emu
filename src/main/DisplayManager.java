@@ -29,7 +29,7 @@ public class DisplayManager extends JFrame{
 
         JPanel graphics = new JPanel();
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
-        graphics.setPreferredSize(new Dimension(1000, 1000));
+        graphics.setPreferredSize(new Dimension(800, 400));
         graphics.add(media);
 
         JPanel manual = new JPanel();
@@ -57,8 +57,8 @@ public class DisplayManager extends JFrame{
         return this.media.getPixel(x,y);
     }
 
-    public void setScreenPixel(boolean p, int x, int y){
-        this.media.setPixel(p, x, y);
+    public void setScreenPixel(int x, int y){
+        this.media.setPixel(x, y);
     }
 
     public void clearGameScreen(){

@@ -24,8 +24,8 @@ public class Screen extends JPanel {
         return graphics[x][y];
     }
 
-    public void setPixel(boolean p, int x, int y){
-        graphics[x][y] = p;
+    public void setPixel(int x, int y){
+        graphics[x][y] ^= true;
     }
 
     public void paintScreen(){
@@ -35,7 +35,8 @@ public class Screen extends JPanel {
     public void paintFullScreen(){
         for (int y = 0; y < 32; y++) {
             for (int x = 0; x < 64; x++) {
-                paintPixel(graphics[x][y], x, y);
+                boolean pixel = graphics[x][y];
+                paintPixel(pixel, x, y);
             }
         }
     }
