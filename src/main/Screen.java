@@ -42,6 +42,14 @@ public class Screen extends JPanel {
         }
     }
 
+    public void clearScreen(){
+        for(int y = 0; y < 32; y++){
+            for(int x = 0; x < 64; x++){
+                this.graphics[y][x] = 0;
+            }
+        }
+    }
+
     @Override
     public void paintComponent(Graphics gfx){
         super.paintComponent(gfx);

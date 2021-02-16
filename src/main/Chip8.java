@@ -7,6 +7,9 @@ import java.io.InputStream;
 import java.util.Random;
 
 public class Chip8 {
+    private int cpuFreq;
+    private int cycToRefresh;
+    private int refreshCycles;
     private short opcode;
     private char[] memory;
     private char[] V;
@@ -41,6 +44,9 @@ public class Chip8 {
     };
 
     public Chip8(){
+        this.cpuFreq = 500;
+        this.cycToRefresh = this.cpuFreq / 60;
+        this.refreshCycles = 0;
         this.pCount = 0x200;
         this.opcode = 0;
         this.iReg = 0;
@@ -54,6 +60,7 @@ public class Chip8 {
         //load fontset into memory
         for(int i = 0; i < fontSet.length; i++){
             this.memory[i] = fontSet[i];
+            System.out.println(Integer.toBinaryString(this.memory[i]));
         }
     }
 
@@ -92,6 +99,8 @@ public class Chip8 {
                 switch(this.opcode & 0x00FF){
                     // 00E0 - clear the display
                     case 0x00E0:
+                        emuDisplay.clearGameScreen();
+                        this.pCount += 2;
                         break;
 
                     // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
@@ -307,7 +316,10 @@ public class Chip8 {
             case 0xD000:
                 System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
                 x = this.V[(opcode & 0x0F00) >>> 8];
+
                 y = this.V[(opcode & 0x00F0) >>> 4];
+                System.out.println(x);
+                System.out.println(y);
                 int n = opcode & 0x000F;
                 this.V[0xF] = 0;
                 for(int i = 0; i < n; i++){
@@ -430,22 +442,26 @@ public class Chip8 {
                 }
                 break;
         }
+        this.refreshCycles++;
+        if(cycToRefresh % this.refreshCycles == 0){
+            this.refreshCycles = 0;
+            //update screen
+            if(drawFlag){
+                emuDisplay.updateScreen();
+                drawFlag = false;
+            }
 
-        //update screen
-        if(drawFlag){
-            emuDisplay.updateScreen();
-            drawFlag = false;
+            //update delay timer
+            if(this.delayTimer > 0){
+                this.delayTimer -= 1;
+            }
+
+            //update sound timer
+            if(this.soundTimer > 0) {
+                this.soundTimer -= 1;
+            }
         }
 
-        //update delay timer
-        if(this.delayTimer > 0){
-            this.delayTimer -= 1;
-        }
-
-        //update sound timer
-        if(this.soundTimer > 0) {
-            this.soundTimer -= 1;
-        }
 
 
     }

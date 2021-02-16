@@ -64,4 +64,8 @@ public class DisplayManager extends JFrame{
         this.media.setPixel(x, y);
     }
 
+    public void clearGameScreen(){
+        this.media.clearScreen();
+    }
+
 }
