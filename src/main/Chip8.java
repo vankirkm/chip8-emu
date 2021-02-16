@@ -16,7 +16,7 @@ public class Chip8 {
     private char delayTimer;
     private char soundTimer;
     private short[] stack;
-    private short sPoint;
+    private byte sPoint;
     private boolean drawFlag;
     private char[] key;
     DisplayManager emuDisplay = new DisplayManager();
@@ -97,7 +97,7 @@ public class Chip8 {
                     // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
                     case 0x00EE:
                         this.pCount = this.stack[sPoint];
-                        this.sPoint = (short)(this.sPoint - 1);
+                        this.sPoint = (byte)((this.sPoint - 1) & 0x00FF);
                         break;
                 }
                 break;
@@ -107,15 +107,13 @@ public class Chip8 {
                 System.out.println("Command 1nnn - " + Integer.toHexString(this.opcode));
                 System.out.println("nnn: " + Integer.toHexString((this.opcode & 0x0FFF)));
                 this.pCount = (short)(this.opcode & 0x0FFF);
-                System.out.println(Integer.toHexString(this.pCount));
                 break;
 
             // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
             case 0x2000:
                 System.out.println("Command 2nnn - " + Integer.toHexString(this.opcode));
-                this.sPoint = (short)(this.sPoint + 1);
-                this.stack[sPoint] = this.pCount;
-                this.pCount = (short)(this.opcode & 0x0FFF);
+                stack[(++this.sPoint)] = this.pCount;
+                this.pCount = (short)(opcode & 0x0FFF);
                 break;
 
             // 3xkk - Jump over next instruction if register Vx and kk are equal
@@ -123,7 +121,7 @@ public class Chip8 {
                 System.out.println("Command 3xkk - " + Integer.toHexString(this.opcode));
                 System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
                 System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                if(this.V[(this.opcode & 0x0F00) >> 8] == (this.opcode & 0x00FF)){
+                if(this.V[(this.opcode & 0x0F00) >>> 8] == (this.opcode & 0x00FF)){
                     this.pCount += 4;
                 }
                 else{
@@ -137,7 +135,7 @@ public class Chip8 {
                 System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
                 System.out.println(Integer.toHexString((this.opcode & 0x0F00) >> 8));
                 System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                if((this.V[(this.opcode & 0x0F00) >> 8]) != (this.opcode & 0x00FF)){
+                if((this.V[(this.opcode & 0x0F00) >>> 8]) != (this.opcode & 0x00FF)){
                     this.pCount += 4;
                 }
                 else{
@@ -148,7 +146,7 @@ public class Chip8 {
             // 5xy0 - compare register Vx to Vy and if they are equal, skip next instruction
             case 0x5000:
                 System.out.println("Command 5xy0 - " + Integer.toHexString(this.opcode));
-                if(this.V[(this.opcode & 0x0F00) >> 8] == this.V[(this.opcode & 0x00F0) >> 4]){
+                if(this.V[(this.opcode & 0x0F00) >>> 8] == this.V[(this.opcode & 0x00F0) >>> 4]){
                     this.pCount += 4;
                 }
                 else{
@@ -159,17 +157,17 @@ public class Chip8 {
             // 6xkk - put the value kk into register Vx, increment pCount by 2.
             case 0x6000:
                 System.out.println("Command 6xkk - " + Integer.toHexString(this.opcode));
-                System.out.println("x: " + Integer.toHexString((this.opcode & 0x0F00) >> 8));
+                System.out.println("x: " + Integer.toHexString((this.opcode & 0x0F00) >>> 8));
                 System.out.println("kk: " + Integer.toHexString(this.opcode & 0x00FF));
-                this.V[((this.opcode & 0x0F00) >> 8)] = (char)(this.opcode & 0x00FF);
+                this.V[((this.opcode & 0x0F00) >>> 8)] = (char)(this.opcode & 0x00FF);
                 pCount += 2;
                 break;
 
             // 7xkk - add the value of kk to the value of register Vx, then store the result in Vx
             case 0x7000:
                 System.out.println("Command 7xkk - " + Integer.toHexString(this.opcode));
-                this.V[(this.opcode & 0x0F00) >> 8] = (char)((this.V[(this.opcode & 0x0F00) >> 8] + (this.opcode & 0x0FF)) & 0x00FF);
-                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >> 8]));
+                this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8] + (this.opcode & 0x0FF)) & 0x00FF);
+                System.out.println("Vx: " + Integer.toHexString(this.V[(this.opcode & 0x0F00) >>> 8]));
                 this.pCount +=2;
                 break;
 
@@ -180,28 +178,28 @@ public class Chip8 {
                     // 8xy0 - store the value of register Vy in register Vx
                     case 0x0000:
                         System.out.println("Command 8xy0 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >> 8] = this.V[(this.opcode & 0x00F0) >> 4];
+                        this.V[(this.opcode & 0x0F00) >>> 8] = this.V[(this.opcode & 0x00F0) >>> 4];
                         this.pCount += 2;
                         break;
 
                     // 8xy1 - perform OR operation on values of Vx and Vy, then store the results in Vx
                     case 0x0001:
                         System.out.println("Command 8xy1 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >> 8] = (char)(this.V[(this.opcode & 0x0F00) >> 8] | this.V[(this.opcode & 0x00F0) >> 4]);
+                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] | this.V[(this.opcode & 0x00F0) >>> 4]);
                         this.pCount += 2;
                         break;
 
                     // 8xy2 - perform AND operation on values of Vx and Vy, then store the results in Vx
                     case 0x0002:
                         System.out.println("Command 8xy2 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >> 8] = (char)(this.V[(this.opcode & 0x0F00) >> 8] & this.V[(this.opcode & 0x00F0) >> 4]);
+                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] & this.V[(this.opcode & 0x00F0) >>> 4]);
                         this.pCount += 2;
                         break;
 
                     // 8xy3 - perform XOR operation on values of Vx and Vy, then store the results in Vx
                     case 0x0003:
                         System.out.println("Command 8xy3 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.V[(this.opcode & 0x0F00) >> 8] = (char)(this.V[(this.opcode & 0x0F00) >> 8] ^ this.V[(this.opcode & 0x00F0) >> 4]);
+                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)(this.V[(this.opcode & 0x0F00) >>> 8] ^ this.V[(this.opcode & 0x00F0) >>> 4]);
                         this.pCount += 2;
                         break;
 
@@ -209,13 +207,13 @@ public class Chip8 {
                     //set VF to 1, otherwise 0. only the lowest 8 bits of the result are kept and stored in Vx
                     case 0x0004:
                         System.out.println("Command 8xy4 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        if((this.V[(this.opcode & 0x0F00) >> 8] + this.V[(this.opcode & 0x00F0) >> 4]) > 255){
+                        if((this.V[(this.opcode & 0x0F00) >>> 8] + this.V[(this.opcode & 0x00F0) >>> 4]) > 255){
                             this.V[0xF] = 1;
                         }
                         else{
                             this.V[0xF] = 0;
                         }
-                        this.V[(this.opcode & 0x0F00) >> 8] = (char)((this.V[(this.opcode & 0x0F00) >> 8] + this.V[(this.opcode & 0x00F0) >> 4]) & 0x00FF);
+                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8] + this.V[(this.opcode & 0x00F0) >>> 4]) & 0x00FF);
                         this.pCount += 2;
                         break;
 
@@ -223,13 +221,13 @@ public class Chip8 {
                     //and the results are stored in Vx
                     case 0x0005:
                         System.out.println("Command 8xy5 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        if(this.V[(this.opcode & 0x0F00) >> 8] > this.V[(this.opcode & 0x00F0) >> 4]){
+                        if(this.V[(this.opcode & 0x0F00) >>> 8] > this.V[(this.opcode & 0x00F0) >>> 4]){
                             this.V[0xF] = 1;
                         }
                         else{
                             this.V[0xF] = 0;
                         }
-                        this.V[(this.opcode & 0x0F00) >> 8] = (char)((this.V[(this.opcode & 0x0F00) >> 8]) - (this.V[(this.opcode & 0x00F0) >> 4]));
+                        this.V[(this.opcode & 0x0F00) >>> 8] = (char)((this.V[(this.opcode & 0x0F00) >>> 8]) - (this.V[(this.opcode & 0x00F0) >>> 4]));
                         this.pCount += 2;
                         break;
 
@@ -238,7 +236,7 @@ public class Chip8 {
                     case 0x0006:
                         System.out.println("Command 8xy6 - " + Integer.toHexString(this.opcode));
                         this.V[0xF] = (char)(this.V[(opcode & 0x0F00) >> 8] & 0x0001);
-                        this.V[(opcode & 0x0F00) >> 8] = (char)(this.V[(opcode & 0x0F00) >> 8] >> 1);
+                        this.V[(opcode & 0x0F00) >>> 8] = (char)(this.V[(opcode & 0x0F00) >>> 8] >>> 1);
                         this.pCount += 2;
                         break;
 
@@ -293,8 +291,6 @@ public class Chip8 {
             case 0xB000:
                 System.out.println("Command Bnnn - " + Integer.toHexString(this.opcode & 0xFFFF));
                 this.pCount = (short)(((this.opcode & 0x0FFF) + this.V[0]) & 0x0FFF);
-                System.out.println(Integer.toHexString(this.V[0]));
-                System.out.println(Integer.toHexString(this.pCount & 0xFFFF));
                 break;
 
             // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
@@ -310,10 +306,10 @@ public class Chip8 {
             // Dxyn - COMPLICATED INSTRUCTIONS
             case 0xD000:
                 System.out.println("Command Dxyn - " + Integer.toHexString(this.opcode & 0xFFFF));
-                System.out.println((opcode & 0xF0FF) >> 8);
-                x = this.V[(opcode & 0x0F00) >> 8];
-                y = this.V[(opcode & 0x00F0) >> 4];
+                x = this.V[(opcode & 0x0F00) >>> 8];
+                y = this.V[(opcode & 0x00F0) >>> 4];
                 int n = opcode & 0x000F;
+                this.V[0xF] = 0;
                 for(int i = 0; i < n; i++){
                     for(int z = 0; z < 8; z++){
                         if (x < 64 && y < 32) {
@@ -321,7 +317,7 @@ public class Chip8 {
                             int ycoord = y + i;
                             // if pixel already exists, set carry (collision)
                             if (emuDisplay.getScreenPixel(xcoord, ycoord) == 1) {
-                                this.V[0xF] = 0x01;
+                                this.V[0xF] = 1;
                             }
                             // draw via xor
                             emuDisplay.setScreenPixel(xcoord,ycoord);
@@ -357,7 +353,7 @@ public class Chip8 {
                     // Fx07 - The value of delayTimer is placed into Vx
                     case 0x0007:
                         System.out.println("Command Fx07 - " + Integer.toHexString(this.opcode));
-                        this.V[(this.opcode & 0x0F00) >> 8] = delayTimer;
+                        this.V[(this.opcode & 0x0F00) >>> 8] = delayTimer;
                         this.pCount += 2;
                         break;
 
@@ -369,7 +365,7 @@ public class Chip8 {
                     // Fx15 - delayTimer is set equal to the value of Vx
                     case 0x0015:
                         System.out.println("Command Fx15 - " + Integer.toHexString(this.opcode & 0xFFFF));
-                        this.delayTimer = this.V[(this.opcode & 0x0F00) >> 8];
+                        this.delayTimer = this.V[(this.opcode & 0x0F00) >>> 8];
                         System.out.println("delayTimer: " + Integer.toHexString(this.delayTimer));
                         this.pCount += 2;
                         break;
@@ -377,14 +373,14 @@ public class Chip8 {
                     // Fx18 - soundTimer is set equal to the value of Vx
                     case 0x0018:
                         System.out.println("Command Fx18 - " + Integer.toHexString(this.opcode));
-                        soundTimer = this.V[(this.opcode & 0x0F00) >> 8];
+                        soundTimer = this.V[(this.opcode & 0x0F00) >>> 8];
                         this.pCount += 2;
                         break;
 
                     // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
                     case 0x001E:
                         System.out.println("Command Fx1E - " + Integer.toHexString(this.opcode));
-                        iReg = (short)(iReg + this.V[(this.opcode & 0x0F00) >> 8]);
+                        iReg = (short)(iReg + this.V[(this.opcode & 0x0F00) >>> 8]);
                         this.pCount += 2;
                         break;
 
@@ -392,7 +388,7 @@ public class Chip8 {
                     // value of Vx
                     case 0x0029:
                         System.out.println("Command Fx29 - " + Integer.toHexString(this.opcode));
-                        iReg = (short)(this.V[(this.opcode & 0x0F00) >> 8]);
+                        iReg = (short)(this.V[(this.opcode & 0x0F00) >>> 8]);
                         this.pCount += 2;
                         break;
 
@@ -400,7 +396,7 @@ public class Chip8 {
                     // the tens digit at location I+1, and the ones digit at location I+2.
                     case 0x0033:
                         System.out.println("Command Fx33 - " + Integer.toHexString(this.opcode));
-                        int vx = this.V[(this.opcode & 0x0F00) >> 8];
+                        int vx = this.V[(this.opcode & 0x0F00) >>> 8];
                         int hundreds = vx / 100;
                         vx = vx - (hundreds * 100);
                         int tens = vx / 10;
