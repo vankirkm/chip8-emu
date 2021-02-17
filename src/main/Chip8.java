@@ -24,6 +24,7 @@ public class Chip8 {
     private boolean drawFlag;
     private char[] key;
     DisplayManager emuDisplay = new DisplayManager();
+    Controller controller = new Controller();
     char[] fontSet =
     {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -96,7 +97,7 @@ public class Chip8 {
         char kk = getKK(opcode);
         short nnn = getNNN(opcode);
 
-        System.out.println("x: " + Integer.toHexString(x) + "\ny: " + Integer.toHexString(y) + "\nn: " + Integer.toHexString(n) + "\nkk: " + Integer.toHexString(kk) + "\nnnn: " + Integer.toHexString(nnn));
+        //System.out.println("x: " + Integer.toHexString(x) + "\ny: " + Integer.toHexString(y) + "\nn: " + Integer.toHexString(n) + "\nkk: " + Integer.toHexString(kk) + "\nnnn: " + Integer.toHexString(nnn));
 
         //decode opcode
         switch(opcode & 0xF000){
@@ -241,7 +242,7 @@ public class Chip8 {
                     // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
                     //in the up position, pCount is incremented by 2
                     case 0x00A1:
-                        System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
+                        //System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
                         break;
                 }
                 break;
@@ -333,8 +334,7 @@ public class Chip8 {
 
     // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
     public void pCountStack(){
-        short tmp = stack[sPoint];
-        pCount = tmp;
+        pCount = stack[sPoint];
         sPoint -= 1;
     }
 
@@ -348,7 +348,7 @@ public class Chip8 {
     // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
     public void incSPoint(short nnn){
         System.out.println("Command 2nnn - " + Integer.toHexString(opcode));
-        sPoint = (byte)(sPoint + 0x01);
+        sPoint = (byte)(sPoint + 1);
         stack[sPoint] = pCount;
         pCount = nnn;
     }
@@ -403,16 +403,14 @@ public class Chip8 {
     // 7xkk - add the value of kk to the value of register Vx, then store the result in Vx
     public void addKK(char x, char kk){
         System.out.println("Command 7xkk - " + Integer.toHexString(opcode));
-        char tmp = (char)(((V[x] + kk)) & 0x00FF);
-        V[x] = tmp;
+        V[x] = (char)(((V[x] + kk)) & 0x00FF);
         pCount += 2;
     }
 
     // 8xy0 - store the value of register Vy in register Vx
     public void putVY(char x, char y){
         System.out.println("Command 8xy0 - " + Integer.toHexString(opcode & 0xFFFF));
-        char tmp = V[y];
-        V[x] = tmp;
+        V[x] = V[y];
         pCount += 2;
     }
 
@@ -507,11 +505,11 @@ public class Chip8 {
     // 9xy0 - compare values of Vx and Vy and if they are not equal, skip next instruction
     public void cmpVXVY(char x, char y){
         System.out.println("Command 9xy0 - " + Integer.toHexString(opcode & 0xFFFF));
-        if(V[x] == V[y]){
-            pCount += 2;
+        if(V[x] != V[y]){
+            pCount += 4;
         }
         else{
-            pCount += 4;
+            pCount += 2;
         }
     }
 
