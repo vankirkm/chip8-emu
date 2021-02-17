@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 public class Chip8 {
@@ -233,16 +234,17 @@ public class Chip8 {
             //the last byte of the opcode
             case 0xE000:
                 switch(opcode & 0x00FF){
-                    // Ex9E - checks the keyboard, and if the key corresponding to the value of Vx is currently
-                    //in the down position, pCount is incremented by 2
+                    // Ex9E
                     case 0x009E:
                         System.out.println("Command Ex9E - " + Integer.toHexString(opcode));
+                        isKeyPressed(x);
                         break;
 
                     // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
                     //in the up position, pCount is incremented by 2
                     case 0x00A1:
-                        //System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
+                        System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
+                        isKeyReleased(x);
                         break;
                 }
                 break;
@@ -258,7 +260,7 @@ public class Chip8 {
 
                     // Fx0A
                     case 0x000A:
-                        pauseExec();
+                        pauseExec(x);
                         break;
 
                     // Fx15
@@ -320,7 +322,7 @@ public class Chip8 {
         }
         refreshCycles++;
         try{
-            TimeUnit.MILLISECONDS.sleep(10);
+            TimeUnit.MILLISECONDS.sleep(1);
         }catch(InterruptedException e){
             e.printStackTrace();
         }
@@ -538,6 +540,22 @@ public class Chip8 {
         pCount += 2;
     }
 
+    // Ex9E - checks the keyboard, and if the key corresponding to the value of Vx is currently
+    //in the down position, pCount is incremented by 2
+    public void isKeyPressed(char x){
+        if(controller.isPressed(V[x])){
+            pCount +=2;
+        }
+    }
+
+    // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
+    //in the up position, pCount is incremented by 2
+    public void isKeyReleased(char x){
+        if(!controller.isPressed(V[x])){
+            pCount += 2;
+        }
+    }
+
     // Fx07 - The value of delayTimer is placed into Vx
     public void putDelayTimer(char x){
         System.out.println("Command Fx07 - " + Integer.toHexString(opcode));
@@ -546,8 +564,15 @@ public class Chip8 {
     }
 
     // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
-    public void pauseExec(){
+    public void pauseExec(char x){
         System.out.println("Command Fx0A - " + Integer.toHexString(opcode));
+        while(true){
+            try{
+                TimeUnit.MILLISECONDS.sleep(0);
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }
+        }
     }
 
     // Fx15 - delayTimer is set equal to the value of Vx

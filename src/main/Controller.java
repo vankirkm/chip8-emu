@@ -20,11 +20,9 @@ public class Controller {
                 synchronized (Controller.class){
                     switch(e.getID()){
                         case KeyEvent.KEY_PRESSED:
-                            System.out.println(e.getKeyCode());
                             setKey(e.getKeyCode(), true);
                             break;
                         case KeyEvent.KEY_RELEASED:
-                            System.out.println(e.getKeyCode());
                             setKey(e.getKeyCode(), false);
                             break;
                     }
@@ -133,7 +131,8 @@ public class Controller {
         }
     }
 
-    public boolean isPressed(byte x){
+    public boolean isPressed(char x){
         return keyPressed[x];
     }
+
 }
