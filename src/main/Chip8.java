@@ -24,8 +24,8 @@ public class Chip8 {
     private byte sPoint;
     private boolean drawFlag;
     private char[] key;
-    DisplayManager emuDisplay = new DisplayManager();
-    Controller controller = new Controller();
+    private Controller controller;
+    private DisplayManager emuDisplay;
     char[] fontSet =
     {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -47,7 +47,7 @@ public class Chip8 {
     };
 
     public Chip8(){
-        cpuFreq = 500;
+        cpuFreq = 900;
         cycToRefresh = cpuFreq / 60;
         refreshCycles = 0;
         pCount = 0x200;
@@ -59,6 +59,8 @@ public class Chip8 {
         gfx = new char[32][64];
         stack = new short[16];
         key = new char[16];
+        controller = new Controller();
+        emuDisplay = new DisplayManager();
 
         //load fontset into memory
         for(int i = 0; i < fontSet.length; i++){
@@ -81,7 +83,11 @@ public class Chip8 {
             }catch (IOException e){
                 System.out.println("End of file unexpectedly reached.");
             }
-
+            try{
+                fis.close();
+            }catch(IOException e1){
+                e1.printStackTrace();
+            }
         }catch(FileNotFoundException e){
             System.out.println("File does not exist. Check file name and try again.");
         }
@@ -92,6 +98,7 @@ public class Chip8 {
 
         //get opcode
         opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
+        System.out.println(Integer.toHexString(opcode & 0xffff));
         char x = getX(opcode);
         char y = getY(opcode);
         char n = getN(opcode);
@@ -322,7 +329,7 @@ public class Chip8 {
         }
         refreshCycles++;
         try{
-            TimeUnit.MILLISECONDS.sleep(1);
+            TimeUnit.NANOSECONDS.sleep(5);
         }catch(InterruptedException e){
             e.printStackTrace();
         }
@@ -337,29 +344,24 @@ public class Chip8 {
     // 00EE - set pCount to the address at the top of the stack, then subtract 1 from sPoint
     public void pCountStack(){
         pCount = stack[sPoint];
-        sPoint -= 1;
+        sPoint = (byte)(sPoint - (byte)0x01);
+        pCount += 2;
     }
 
     // 1nnn - set pCount to nnn
     public void setPN(short nnn){
-        System.out.println("Command 1nnn - " + Integer.toHexString(opcode));
-        System.out.println("nnn: " + Integer.toHexString((opcode & 0x0FFF)));
         pCount = nnn;
     }
 
     // 2nnn - increment sPoint, then put the current pCount on top of the stack. Then set pCount to nnn.
     public void incSPoint(short nnn){
-        System.out.println("Command 2nnn - " + Integer.toHexString(opcode));
-        sPoint = (byte)(sPoint + 1);
+        sPoint = (byte)(sPoint + (byte)0x01);
         stack[sPoint] = pCount;
         pCount = nnn;
     }
 
     // 3xkk - Jump over next instruction if register Vx and kk are equal
     public void jmpEqual(char x, char kk){
-        System.out.println("Command 3xkk - " + Integer.toHexString(opcode));
-        System.out.println("Vx: " + Integer.toHexString(V[(opcode & 0x0F00) >> 8]));
-        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
         if(V[x] == kk){
             pCount += 4;
         }
@@ -370,10 +372,6 @@ public class Chip8 {
 
     // 4xkk - compare the register Vx to kk and if they are not equal, skip next instruction
     public void jmpNotEqual(char x, char kk){
-        System.out.println("Command 4xkk - " + Integer.toHexString(opcode));
-        System.out.println("Vx: " + Integer.toHexString(V[(opcode & 0x0F00) >> 8]));
-        System.out.println(Integer.toHexString((opcode & 0x0F00) >> 8));
-        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
         if((V[x] != kk)){
             pCount += 4;
         }
@@ -384,7 +382,6 @@ public class Chip8 {
 
     // 5xy0 - compare register Vx to Vy and if they are equal, skip next instruction
     public void cmpEqual(char x, char y){
-        System.out.println("Command 5xy0 - " + Integer.toHexString(opcode));
         if(V[x] == V[y]){
             pCount += 4;
         }
@@ -395,30 +392,24 @@ public class Chip8 {
 
     // 6xkk - put the value kk into register Vx, increment pCount by 2.
     public void putKK(char x, char kk){
-        System.out.println("Command 6xkk - " + Integer.toHexString(opcode));
-        System.out.println("x: " + Integer.toHexString((opcode & 0x0F00) >>> 8));
-        System.out.println("kk: " + Integer.toHexString(opcode & 0x00FF));
         V[x] = kk;
         pCount += 2;
     }
 
     // 7xkk - add the value of kk to the value of register Vx, then store the result in Vx
     public void addKK(char x, char kk){
-        System.out.println("Command 7xkk - " + Integer.toHexString(opcode));
         V[x] = (char)(((V[x] + kk)) & 0x00FF);
         pCount += 2;
     }
 
     // 8xy0 - store the value of register Vy in register Vx
     public void putVY(char x, char y){
-        System.out.println("Command 8xy0 - " + Integer.toHexString(opcode & 0xFFFF));
         V[x] = V[y];
         pCount += 2;
     }
 
     // 8xy1 - perform OR operation on values of Vx and Vy, then store the results in Vx
     public void orVY(char x, char y){
-        System.out.println("Command 8xy1 - " + Integer.toHexString(opcode & 0xFFFF));
         char tmp = (char)(V[x] | V[y]);
         V[x] = tmp;
         pCount += 2;
@@ -426,7 +417,6 @@ public class Chip8 {
 
     // 8xy2 - perform AND operation on values of Vx and Vy, then store the results in Vx
     public void andVY(char x, char y){
-        System.out.println("Command 8xy2 - " + Integer.toHexString(opcode & 0xFFFF));
         char tmp = (char)(V[x] & V[y]);
         V[x] = tmp;
         pCount += 2;
@@ -434,7 +424,6 @@ public class Chip8 {
 
     // 8xy3 - perform XOR operation on values of Vx and Vy, then store the results in Vx
     public void xorVY(char x, char y){
-        System.out.println("Command 8xy3 - " + Integer.toHexString(opcode & 0xFFFF));
         char tmp = (char)(V[x] ^ V[y]);
         V[x] = tmp;
         pCount += 2;
@@ -443,7 +432,6 @@ public class Chip8 {
     // 8xy4 - The values of Vx and Vy are added together. If the result is greater than 8 bits,
     //set VF to 1, otherwise 0. only the lowest 8 bits of the result are kept and stored in Vx
     public void addVY(char x, char y){
-        System.out.println("Command 8xy4 - " + Integer.toHexString(opcode & 0xFFFF));
         if((V[x] + V[y]) > 255){
             V[0xF] = 1;
         }
@@ -458,7 +446,6 @@ public class Chip8 {
     // 8xy5 - if Vx > Vy, set VF to 1, otherwise 0. then Vy is subtracted from Vx,
     //and the results are stored in Vx
     public void subVY(char x, char y){
-        System.out.println("Command 8xy5 - " + Integer.toHexString(opcode & 0xFFFF));
         if(V[x] > V[y]){
             V[0xF] = 1;
         }
@@ -473,7 +460,6 @@ public class Chip8 {
     // 8xy6 - if the least significant bit of Vx is 1, then VF is set to 1, otherwise 0.
     //Then Vx is divided by 2.
     public void leastSigBit(char x, char y){
-        System.out.println("Command 8xy6 - " + Integer.toHexString(opcode));
         V[0xF] = (char)(V[x] & 0x0001);
         V[x] = (char)(V[x] >>> 1);
         pCount += 2;
@@ -482,7 +468,6 @@ public class Chip8 {
     // 8xy7 - if Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy,
     //and the results stored in Vx
     public void subtractVX(char x, char y){
-        System.out.println("Command 8xy7 - " + Integer.toHexString(opcode));
         if(V[y] > V[x]){
             V[0xF] = 1;
         }
@@ -497,16 +482,14 @@ public class Chip8 {
     // 8xyE - if the most significant bit of Vx is 1, then VF is set to 1, otherwise 0.
     //Then Vx is multiplied by 2.
     public void mostSigBit(char x, char y){
-        System.out.println("Command 8xyE - " + Integer.toHexString(opcode));
         char tmp = (char)(V[x] >> 7);
         V[0xF] = tmp;
-        V[x] = (char)((V[x] << 2) & 0x00FF);
+        V[x] = (char)((V[x] << 1) & 0x00FF);
         pCount += 2;
     }
 
     // 9xy0 - compare values of Vx and Vy and if they are not equal, skip next instruction
     public void cmpVXVY(char x, char y){
-        System.out.println("Command 9xy0 - " + Integer.toHexString(opcode & 0xFFFF));
         if(V[x] != V[y]){
             pCount += 4;
         }
@@ -515,25 +498,20 @@ public class Chip8 {
         }
     }
 
-
     // Annn - set iReg to nnn
     public void setIReg(short nnn){
-        System.out.println("Command Annn - " + Integer.toHexString(opcode & 0xFFFF));
         iReg = (short)(nnn & 0x0FFF);
-        System.out.println(Integer.toHexString(iReg));
         pCount += 2;
     }
 
     // Bnnn - set pCount to nnn plus the value of V0
     public void setPCount(short nnn){
-        System.out.println("Command Bnnn - " + Integer.toHexString(opcode & 0xFFFF));
         pCount = (short)((nnn + V[0]));
     }
 
     // Cxkk - generate a random number from 0 - 255 and perform AND operation on it and the value kk.
     // store the results in Vx
     public void putRandVX(char x, char kk){
-        System.out.println("Command Cxyk - " + Integer.toHexString(opcode));
         Random r = new Random();
         int rand = r.nextInt(256);
         V[x] = (char)((kk & rand) & 0x00FF);
@@ -543,57 +521,52 @@ public class Chip8 {
     // Ex9E - checks the keyboard, and if the key corresponding to the value of Vx is currently
     //in the down position, pCount is incremented by 2
     public void isKeyPressed(char x){
-        if(controller.isPressed(V[x])){
-            pCount +=2;
+        if(controller.isPressed((char)(V[x] & 0x000F))){
+            pCount += 4;
+        }
+        else{
+            pCount += 2;
         }
     }
 
     // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
     //in the up position, pCount is incremented by 2
     public void isKeyReleased(char x){
-        if(!controller.isPressed(V[x])){
+        if(!controller.isPressed((char)(V[x] & 0x000F))){
+            pCount += 4;
+        }
+        else{
             pCount += 2;
         }
     }
 
     // Fx07 - The value of delayTimer is placed into Vx
     public void putDelayTimer(char x){
-        System.out.println("Command Fx07 - " + Integer.toHexString(opcode));
         V[x] = delayTimer;
         pCount += 2;
     }
 
     // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
     public void pauseExec(char x){
-        System.out.println("Command Fx0A - " + Integer.toHexString(opcode));
-        while(true){
-            try{
-                TimeUnit.MILLISECONDS.sleep(0);
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }
-        }
+        V[x] = (char)(controller.waitForKeyPress());
     }
 
     // Fx15 - delayTimer is set equal to the value of Vx
     public void setDelayTimerVX(char x){
-        System.out.println("Command Fx15 - " + Integer.toHexString(opcode & 0xFFFF));
         delayTimer = V[x];
         pCount += 2;
     }
 
     // Fx18 - soundTimer is set equal to the value of Vx
     public void setSoundTimer(char x){
-        System.out.println("Command Fx18 - " + Integer.toHexString(opcode));
         soundTimer = V[x];
         pCount += 2;
     }
 
     // Fx1E - the values of iReg and Vx are added, and the results are stored in iReg
     public void addIReg(char x){
-        System.out.println("Command Fx1E - " + Integer.toHexString(opcode));
-        int int_vx = V[x] & 0xFF; //Unsigned
-        int int_i = iReg & 0xFFFF; //Unsigned
+        int int_vx = V[x] & 0xFF;
+        int int_i = iReg & 0xFFFF;
         iReg = (short)(int_vx + int_i);
         pCount += 2;
     }
@@ -601,15 +574,13 @@ public class Chip8 {
     // Fx29 - the value of iReg is set to location of the hexadecimal sprite corresponding to the
     // value of Vx
     public void setIRegHex(char x){
-        System.out.println("Command Fx29 - " + Integer.toHexString(opcode));
-        iReg = (short)(V[x] * 5);
+        iReg = (short)((V[x] * 5) & 0x00FF);
         pCount += 2;
     }
 
     // Fx33 - take the decimal value of Vx and place the hundreds digit in memory at I,
     // the tens digit at location I+1, and the ones digit at location I+2.
     public void putIRegValues(char x){
-        System.out.println("Command Fx33 - " + Integer.toHexString(opcode));
         int vx = V[x];
         int hundreds = vx / 100;
         vx = vx - (hundreds * 100);
@@ -624,7 +595,6 @@ public class Chip8 {
 
     // Fx55 - copy the values of registers V0 through Vx into memory, starting at the address in iReg
     public void regToMem(char x){
-        System.out.println("Command Fx55 - " + Integer.toHexString(opcode));
         int tmp = x;
         for(int i = 0; i <= tmp; i++){
             memory[iReg + i] = V[i];
@@ -634,7 +604,6 @@ public class Chip8 {
 
     //// Fx65 - Read the values in memory starting at location iReg into the registers V0 through Vx
     public void memToReg(char x){
-        System.out.println("Command Fx65 - " + Integer.toHexString(opcode));
         int tmpX = x;
         for(int i = 0; i <= tmpX; i++){
             V[i] = memory[iReg + i];
@@ -645,7 +614,6 @@ public class Chip8 {
 
     //dxyn - draw method
     public void drawSprite(char x, char y, int n){
-        System.out.println("Command Dxyn - " + Integer.toHexString(opcode & 0xFFFF));
         byte readBytes = 0;
 
         byte vf = (byte)0x0;
@@ -695,7 +663,6 @@ public class Chip8 {
     }
 
     public char getY(short opcode){
-        System.out.println(opcode & 0x0F00 >> 8);
         return (char)((opcode & 0x00F0) >>> 4);
     }
 

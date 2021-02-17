@@ -2,137 +2,162 @@ package main;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.concurrent.TimeUnit;
 
 public class Controller {
 
     private boolean[] keyPressed;
     private byte lastPressed;
+    private int numKeysPressed;
 
     public Controller(){
         keyPressed = new boolean[16];
         prepareInput();
+        numKeysPressed = 0;
     }
 
     public void prepareInput(){
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
             @Override
             public boolean dispatchKeyEvent(KeyEvent e) {
-                synchronized (Controller.class){
+
                     switch(e.getID()){
                         case KeyEvent.KEY_PRESSED:
-                            setKey(e.getKeyCode(), true);
+                            if(setKey(e.getKeyCode(), true)){
+                                numKeysPressed++;
+                            }
+                            numKeysPressed++;
                             break;
                         case KeyEvent.KEY_RELEASED:
-                            setKey(e.getKeyCode(), false);
+                            if(setKey(e.getKeyCode(), false)){
+                                numKeysPressed++;
+                            }
+                            numKeysPressed--;
                             break;
                     }
-                }
+
                 return false;
             }
         });
     }
 
-    public void setKey(int key, boolean pressed){
+    public boolean setKey(int key, boolean pressed){
         switch(key){
             //1
-            case 49:
+            case KeyEvent.VK_1:
                 keyPressed[0x1] = pressed;
                 lastPressed = 0x1;
                 break;
 
             //2
-            case 50:
+            case KeyEvent.VK_2:
                 keyPressed[0x2] = pressed;
                 lastPressed = 0x2;
                 break;
 
             //3
-            case 51:
+            case KeyEvent.VK_3:
                 keyPressed[0x3] = pressed;
                 lastPressed = 0x3;
                 break;
 
             //4
-            case 52:
+            case KeyEvent.VK_4:
                 keyPressed[0xC] = pressed;
                 lastPressed = 0xC;
                 break;
 
             //Q
-            case 81:
+            case KeyEvent.VK_Q:
                 keyPressed[0x4] = pressed;
                 lastPressed = 0x4;
                 break;
 
             //W
-            case 87:
+            case KeyEvent.VK_W:
                 keyPressed[0x5] = pressed;
                 lastPressed = 0x5;
                 break;
 
             //E
-            case 69:
+            case KeyEvent.VK_E:
                 keyPressed[0x6] = pressed;
                 lastPressed = 0x6;
                 break;
 
             //R
-            case 82:
+            case KeyEvent.VK_R:
                 keyPressed[0xD] = pressed;
                 lastPressed = 0xD;
                 break;
             //A
-            case 65:
+            case KeyEvent.VK_A:
                 keyPressed[0x7] = pressed;
                 lastPressed = 0x7;
                 break;
 
             //S
-            case 83:
+            case KeyEvent.VK_S:
                 keyPressed[0x8] = pressed;
                 lastPressed = 0x8;
                 break;
 
             //D
-            case 68:
+            case KeyEvent.VK_D:
                 keyPressed[0x9] = pressed;
                 lastPressed = 0x9;
                 break;
 
             //F
-            case 70:
+            case KeyEvent.VK_F:
                 keyPressed[0xE] = pressed;
                 lastPressed = 0xE;
                 break;
 
             //Z
-            case 90:
+            case KeyEvent.VK_Z:
                 keyPressed[0xA] = pressed;
                 lastPressed = 0xA;
                 break;
 
             //X
-            case 88:
+            case KeyEvent.VK_X:
                 keyPressed[0x0] = pressed;
                 lastPressed = 0x0;
                 break;
 
             //C
-            case 67:
+            case KeyEvent.VK_C:
                 keyPressed[0xB] = pressed;
                 lastPressed = 0xB;
                 break;
 
             //V
-            case 86:
+            case KeyEvent.VK_V:
                 keyPressed[0xF] = pressed;
                 lastPressed = 0xF;
                 break;
+
+            default:
+                return false;
         }
+        return true;
     }
 
+    public byte waitForKeyPress(){
+        while(numKeysPressed == 0){
+            try{
+                TimeUnit.MILLISECONDS.sleep(0);
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+        return lastPressed;
+    }
+
+
     public boolean isPressed(char x){
-        return keyPressed[x];
+        return keyPressed[x & 0x000F];
     }
 
 }

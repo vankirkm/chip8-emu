@@ -10,7 +10,7 @@ public class DisplayManager extends JFrame{
     private Screen media;
 
     public DisplayManager(){
-        this.media = new Screen();
+        media = new Screen();
         media.setPreferredSize(new Dimension(640,320));
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
         Border loweredbevel = BorderFactory.createLoweredBevelBorder();
