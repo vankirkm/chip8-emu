@@ -10,3 +10,8 @@ Planned features:
 * game selection
 * game instructions displayed below the game window
 * debug panel displayed in the right panel
+
+
+## Resources
+http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
+http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
