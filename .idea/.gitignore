@@ -1,3 +1,8 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+/out/production/chip8-emu/main/Chip8.class
+/out/production/chip8-emu/main/Controller.class
+/out/production/chip8-emu/main/DisplayManager.class
+/out/production/chip8-emu/main/main.class
+/out/production/chip8-emu/main/Screen.class
