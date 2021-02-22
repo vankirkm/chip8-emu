@@ -34,6 +34,7 @@ public class DisplayManager extends JFrame{
             }
         }
 
+
         media = new Screen();
         media.setPreferredSize(new Dimension(640,320));
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
@@ -78,11 +79,37 @@ public class DisplayManager extends JFrame{
         manual.setMaximumSize(new Dimension(640, 400));
         JLabel manLabel = new JLabel("Welcome to the Chip8 Emulator");
         manLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel reset = new JLabel("Resetting the Console\n");
+        JLabel reset = new JLabel("Resetting the Console");
+        JLabel resetInst = new JLabel("<html>To reset the console, select a game from the dropdown " +
+                "menu in the right pane and click the reset console button.</html>");
+        resetInst.setAlignmentX(Component.CENTER_ALIGNMENT);
         reset.setAlignmentX(Component.CENTER_ALIGNMENT);
         manual.add(manLabel);
         manual.add(Box.createRigidArea(new Dimension(600,10)));
         manual.add(reset);
+        manual.add(resetInst);
+        manual.add(Box.createRigidArea(new Dimension(600,20)));
+        JLabel controls = new JLabel("Controls");
+        controls.setAlignmentX(Component.CENTER_ALIGNMENT);
+        manual.add(controls);
+
+        //Swing did not want to play nicely with html formatted text strings, so the controls needed
+        //to be added as separate jlabels in order to properly center the text.
+        JLabel controlInst = new JLabel("The Chip8 keypad is mapped to the following keys:");
+        JLabel firstRow = new JLabel("1 2 3 4");
+        JLabel secondRow = new JLabel("Q W E R");
+        JLabel thirdRow = new JLabel("A S D F");
+        JLabel fourthRow = new JLabel("Z X C V");
+        firstRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        secondRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        thirdRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        fourthRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        controlInst.setAlignmentX(Component.CENTER_ALIGNMENT);
+        manual.add(controlInst);
+        manual.add(firstRow);
+        manual.add(secondRow);
+        manual.add(thirdRow);
+        manual.add(fourthRow);
 
         mainDisplay.add(graphics);
         mainDisplay.add(Box.createRigidArea(new Dimension(640, 10)));
@@ -90,11 +117,12 @@ public class DisplayManager extends JFrame{
         root.add(mainDisplay);
         root.add(debug);
 
+
         this.getContentPane().add(root);
         this.setTitle("CHIP-8 Emu");
         this.setIconImage(new ImageIcon("img\\logo.jpg").getImage());
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setPreferredSize(new Dimension(1000, 530));
+        this.setPreferredSize(new Dimension(1000, 680));
         this.pack();
         this.setVisible(true);
     }
