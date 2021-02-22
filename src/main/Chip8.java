@@ -98,14 +98,12 @@ public class Chip8 {
 
         //get opcode
         opcode = (short) (memory[pCount] << 8 | memory[pCount + 1]);
-        System.out.println(Integer.toHexString(opcode & 0xffff));
         char x = getX(opcode);
         char y = getY(opcode);
         char n = getN(opcode);
         char kk = getKK(opcode);
         short nnn = getNNN(opcode);
 
-        //System.out.println("x: " + Integer.toHexString(x) + "\ny: " + Integer.toHexString(y) + "\nn: " + Integer.toHexString(n) + "\nkk: " + Integer.toHexString(kk) + "\nnnn: " + Integer.toHexString(nnn));
 
         //decode opcode
         switch(opcode & 0xF000){
@@ -243,14 +241,12 @@ public class Chip8 {
                 switch(opcode & 0x00FF){
                     // Ex9E
                     case 0x009E:
-                        System.out.println("Command Ex9E - " + Integer.toHexString(opcode));
                         isKeyPressed(x);
                         break;
 
                     // ExA1 - checks the keyboard, and if the key corresponding to the value of Vx is currently
                     //in the up position, pCount is incremented by 2
                     case 0x00A1:
-                        System.out.println("Command ExA1 - " + Integer.toHexString(opcode));
                         isKeyReleased(x);
                         break;
                 }
