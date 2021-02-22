@@ -7,7 +7,6 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class DisplayManager extends JFrame{
@@ -17,6 +16,7 @@ public class DisplayManager extends JFrame{
 
     public DisplayManager(){
 
+        //set UI look and feel to Nimbus
         for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
             if ("Nimbus".equals(info.getName())) {
                 try {
@@ -33,6 +33,7 @@ public class DisplayManager extends JFrame{
                 break;
             }
         }
+
         media = new Screen();
         media.setPreferredSize(new Dimension(640,320));
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
@@ -46,13 +47,12 @@ public class DisplayManager extends JFrame{
         mainDisplay.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JPanel debug = new JPanel();
-        debug.setPreferredSize(new Dimension(200,600));
         debug.setLayout(new BoxLayout(debug, BoxLayout.Y_AXIS));
         debug.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
 
         JPanel graphics = new JPanel();
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
-        graphics.setPreferredSize(new Dimension(800, 400));
+        graphics.setPreferredSize(new Dimension(700, 350));
         graphics.add(media);
 
         Box gameSelectPanel = Box.createVerticalBox();
@@ -67,17 +67,23 @@ public class DisplayManager extends JFrame{
         this.resetButton = new JButton("Reset Console");
         resetButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-
         debug.add(gameSelectText);
         debug.add(gameList);
         debug.add(resetButton);
-        //debug.add(gameSelectPanel);
-        //debug.setAlignmentX(Component.CENTER_ALIGNMENT);
-
 
         JPanel manual = new JPanel();
+        manual.setAlignmentX(Component.CENTER_ALIGNMENT);
+        manual.setLayout(new BoxLayout(manual, BoxLayout.Y_AXIS));
         manual.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
-        manual.setPreferredSize(new Dimension(640, 200));
+        manual.setMaximumSize(new Dimension(640, 400));
+        JLabel manLabel = new JLabel("Welcome to the Chip8 Emulator");
+        manLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel reset = new JLabel("Resetting the Console\n");
+        reset.setAlignmentX(Component.CENTER_ALIGNMENT);
+        manual.add(manLabel);
+        manual.add(Box.createRigidArea(new Dimension(600,10)));
+        manual.add(reset);
+
         mainDisplay.add(graphics);
         mainDisplay.add(Box.createRigidArea(new Dimension(640, 10)));
         mainDisplay.add(manual);
@@ -88,6 +94,7 @@ public class DisplayManager extends JFrame{
         this.setTitle("CHIP-8 Emu");
         this.setIconImage(new ImageIcon("img\\logo.jpg").getImage());
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setPreferredSize(new Dimension(1000, 530));
         this.pack();
         this.setVisible(true);
     }
@@ -108,6 +115,7 @@ public class DisplayManager extends JFrame{
         this.media.clearScreen();
     }
 
+    //Get list of roms available in roms folder
     public ArrayList<String> getGameList(){
         ArrayList<String> gameList = new ArrayList();
         File romFolder = new File("roms/");
@@ -117,10 +125,12 @@ public class DisplayManager extends JFrame{
         return gameList;
     }
 
+    //Get name of current selected game in gameList
     public String getSelectedGame(){
         return gameList.getSelectedItem().toString();
     }
 
+    //Add actionListener from Chip8 class to resetButton
     public void addListenerToReset(ActionListener al){
         resetButton.addActionListener(al);
     }
