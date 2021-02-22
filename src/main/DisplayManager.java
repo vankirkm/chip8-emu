@@ -80,8 +80,8 @@ public class DisplayManager extends JFrame{
         JLabel manLabel = new JLabel("Welcome to the Chip8 Emulator");
         manLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         JLabel reset = new JLabel("Resetting the Console");
-        JLabel resetInst = new JLabel("<html>To reset the console, select a game from the dropdown " +
-                "menu in the right pane and click the reset console button.</html>");
+        JLabel resetInst = new JLabel("To reset the console, select a game from the dropdown " +
+                "menu in the right pane and click the reset console button.");
         resetInst.setAlignmentX(Component.CENTER_ALIGNMENT);
         reset.setAlignmentX(Component.CENTER_ALIGNMENT);
         manual.add(manLabel);
@@ -94,7 +94,8 @@ public class DisplayManager extends JFrame{
         manual.add(controls);
 
         //Swing did not want to play nicely with html formatted text strings, so the controls needed
-        //to be added as separate jlabels in order to properly center the text.
+        //to be added as separate jlabels in order to properly center the text. In the future, the whole manual
+        //should be implemented as one html formatted paragraph instead of multiple labels
         JLabel controlInst = new JLabel("The Chip8 keypad is mapped to the following keys:");
         JLabel firstRow = new JLabel("1 2 3 4");
         JLabel secondRow = new JLabel("Q W E R");
