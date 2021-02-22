@@ -12,32 +12,25 @@ public class Controller {
 
     public Controller(){
         keyPressed = new boolean[16];
-        prepareInput();
+        getInput();
         numKeysPressed = 0;
     }
 
-    public void prepareInput(){
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
-            @Override
-            public boolean dispatchKeyEvent(KeyEvent e) {
-
-                    switch(e.getID()){
-                        case KeyEvent.KEY_PRESSED:
-                            if(setKey(e.getKeyCode(), true)){
-                                numKeysPressed++;
-                            }
-                            numKeysPressed++;
-                            break;
-                        case KeyEvent.KEY_RELEASED:
-                            if(setKey(e.getKeyCode(), false)){
-                                numKeysPressed++;
-                            }
-                            numKeysPressed--;
-                            break;
+    public void getInput(){
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
+            switch(e.getID()){
+                case KeyEvent.KEY_PRESSED:
+                    if(setKey(e.getKeyCode(), true)){
+                        numKeysPressed++;
                     }
-
-                return false;
+                    break;
+                    case KeyEvent.KEY_RELEASED:
+                        if(setKey(e.getKeyCode(), false)){
+                            numKeysPressed++;
+                        }
+                        break;
             }
+            return false;
         });
     }
 
@@ -146,11 +139,7 @@ public class Controller {
 
     public byte waitForKeyPress(){
         while(numKeysPressed == 0){
-            try{
-                TimeUnit.MILLISECONDS.sleep(0);
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }
+            getInput();
         }
         return lastPressed;
     }

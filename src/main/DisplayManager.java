@@ -4,12 +4,35 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class DisplayManager extends JFrame{
     private Screen media;
+    private JButton resetButton;
+    private JComboBox gameList;
 
     public DisplayManager(){
+
+        for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                try {
+                    UIManager.setLookAndFeel(info.getClassName());
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (UnsupportedLookAndFeelException e) {
+                    e.printStackTrace();
+                }
+                break;
+            }
+        }
         media = new Screen();
         media.setPreferredSize(new Dimension(640,320));
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
@@ -31,6 +54,26 @@ public class DisplayManager extends JFrame{
         graphics.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
         graphics.setPreferredSize(new Dimension(800, 400));
         graphics.add(media);
+
+        Box gameSelectPanel = Box.createVerticalBox();
+        gameSelectPanel.setMaximumSize(new Dimension(200, 200));
+        gameSelectPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel gameSelectText = new JLabel("Game Select");
+        gameSelectText.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.gameList = new JComboBox(getGameList().toArray());
+        gameList.setMaximumSize(new Dimension(400,30));
+        gameList.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.resetButton = new JButton("Reset Console");
+        resetButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+
+        debug.add(gameSelectText);
+        debug.add(gameList);
+        debug.add(resetButton);
+        //debug.add(gameSelectPanel);
+        //debug.setAlignmentX(Component.CENTER_ALIGNMENT);
+
 
         JPanel manual = new JPanel();
         manual.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
@@ -63,6 +106,23 @@ public class DisplayManager extends JFrame{
 
     public void clearGameScreen(){
         this.media.clearScreen();
+    }
+
+    public ArrayList<String> getGameList(){
+        ArrayList<String> gameList = new ArrayList();
+        File romFolder = new File("roms/");
+        for(File rom : romFolder.listFiles()){
+            gameList.add(rom.getName());
+        }
+        return gameList;
+    }
+
+    public String getSelectedGame(){
+        return gameList.getSelectedItem().toString();
+    }
+
+    public void addListenerToReset(ActionListener al){
+        resetButton.addActionListener(al);
     }
 
 }

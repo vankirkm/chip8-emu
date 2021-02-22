@@ -1,5 +1,9 @@
 package main;
 
+import javax.sound.midi.Soundbank;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -17,13 +21,11 @@ public class Chip8 {
     private char[] V;
     private short iReg;
     private short pCount;
-    private char[][] gfx;
     private char delayTimer;
     private char soundTimer;
     private short[] stack;
     private byte sPoint;
     private boolean drawFlag;
-    private char[] key;
     private Controller controller;
     private DisplayManager emuDisplay;
     char[] fontSet =
@@ -56,11 +58,10 @@ public class Chip8 {
         sPoint = 0;
         memory = new char[4096];
         V = new char[16];
-        gfx = new char[32][64];
         stack = new short[16];
-        key = new char[16];
         controller = new Controller();
         emuDisplay = new DisplayManager();
+        addListenerToReset();
 
         //load fontset into memory
         for(int i = 0; i < fontSet.length; i++){
@@ -76,7 +77,6 @@ public class Chip8 {
             int ch = 0;
             try{
                 while((ch = fis.read()) != -1){
-                    System.out.println((instCount + 0x200) + " " + Integer.toHexString(ch));
                     memory[instCount + 0x200] = (char) ch;
                     instCount++;
                 }
@@ -549,6 +549,7 @@ public class Chip8 {
     // Fx0A - All execution stops until a key is pressed, then the value of that key is stored in Vx
     public void pauseExec(char x){
         V[x] = (char)(controller.waitForKeyPress());
+        pCount += 2;
     }
 
     // Fx15 - delayTimer is set equal to the value of Vx
@@ -586,10 +587,9 @@ public class Chip8 {
         vx = vx - (hundreds * 100);
         int tens = vx / 10;
         vx = vx - (tens * 10);
-        int units = vx;
         memory[iReg] = (char)hundreds;
         memory[iReg + 1] = (char)tens;
-        memory[iReg + 2] = (char)units;
+        memory[iReg + 2] = (char)vx;
         pCount += 2;
     }
 
@@ -614,43 +614,37 @@ public class Chip8 {
 
     //dxyn - draw method
     public void drawSprite(char x, char y, int n){
-        byte readBytes = 0;
 
         byte vf = (byte)0x0;
-        while(readBytes < n){
+        for(int i = 0; i < n; i++){
 
-            byte currentByte = (byte)(memory[iReg + readBytes]); //Read one byte
-            for(int i = 0; i <=7; i++){
-                //For every pixel
+            byte spriteByte = (byte)(memory[iReg + i]);
+            for(int z = 0; z <=7; z++){
 
-                //Calculate real coordinate
                 int int_x = V[x] & 0xFF;
                 int int_y = V[y] & 0xFF;
-                int real_x = (int_x + i)%64;
-                int real_y = (int_y + readBytes)%32;
+                int xCoord = (int_x + z)%64;
+                int yCoord = (int_y + i)%32;
 
+                //get previous bit held in the screen and XOR it with the corresponding bit in spriteByte
+                boolean previousPixel = emuDisplay.getScreenPixel(xCoord, yCoord);
+                boolean newPixel = previousPixel ^ isPixelSet(spriteByte,7-z);
 
-                boolean previousPixel = emuDisplay.getScreenPixel(real_x, real_y); //Previous value of pixel
-                boolean newPixel = previousPixel ^ isBitSet(currentByte,7-i); //XOR
-
-                emuDisplay.setScreenPixel(newPixel,real_x, real_y);
+                emuDisplay.setScreenPixel(newPixel,xCoord, yCoord);
 
                 if(previousPixel == true && newPixel == false){
-                    //A pixel has been erased
+                    //Set VF to 1 if there has been a pixel collision
                     vf = (byte)0x01;
                 }
 
             }
-
-            V[0xF] = (char)vf; //Set Vf. Will be 1 if a pixel has been erased
-            readBytes++;
+            V[0xF] = (char)vf;
         }
-
         drawFlag = true;
         pCount += 2;
     }
 
-    private  Boolean isBitSet(byte b, int bit)
+    private  Boolean isPixelSet(byte b, int bit)
     {
         return (b & (1 << bit)) != 0;
     }
@@ -678,4 +672,54 @@ public class Chip8 {
         return (char)(opcode & 0x00FF);
     }
 
+    //reset console and load new game
+    public void loadNewGame(String game){
+        cpuFreq = 900;
+        cycToRefresh = cpuFreq / 60;
+        refreshCycles = 0;
+        pCount = 0x200;
+        opcode = 0;
+        iReg = 0;
+        sPoint = 0;
+        resetMem();
+        resetStack();
+        resetV();
+        emuDisplay.clearGameScreen();
+
+        //load fontset into memory
+        for(int i = 0; i < fontSet.length; i++){
+            char bte = fontSet[i];
+            memory[i] = bte;
+        }
+        loadGame(game);
+    }
+
+    public void resetMem(){
+        for(int i = 0; i < 4096; i++){
+            memory[i] = 0;
+        }
+    }
+
+    public void resetV(){
+        for(int i = 0; i < 16; i++){
+            V[i] = 0;
+        }
+    }
+
+    public void resetStack(){
+        for(int i = 0; i < 16; i++){
+            stack[i] = 0;
+        }
+    }
+
+    //create actionlistener for reset button and add it to resetButton
+    public void addListenerToReset(){
+        ActionListener al = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                loadNewGame(emuDisplay.getSelectedGame());
+            }
+        };
+        emuDisplay.addListenerToReset(al);
+    }
 }
